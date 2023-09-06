@@ -2,6 +2,7 @@ import matplotlib.lines as mlines
 import numpy as np
 import formatPlots as fp
 import matplotlib.pyplot as plt
+import utilities as util
 plt.rcParams['text.usetex'] = True
 plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
 
@@ -25,10 +26,10 @@ class PlotSimResults:
     
     def plotVelocityTracking(self, fig, ax):
         q_bar_dots = np.vstack((self.q_T_dots, self.q_r_dots))
-        K = [0.5*self.planner.m*q_T_dot.T@q_T_dot for q_T_dot in self.q_T_dots.T[:,:,None]]
-        m_bar = np.array([[self.planner.m, 0, 0], [0, self.planner.m, 0], [0, 0, self.planner.m_r]])
+        K = [0.5*self.robot.m*q_T_dot.T@q_T_dot for q_T_dot in self.q_T_dots.T[:,:,None]]
+        m_bar = np.array([[self.robot.m, 0, 0], [0, self.robot.m, 0], [0, 0, self.controller.m_r]])
         K_bar = np.concatenate([0.5*q_bar_dot.T@m_bar@q_bar_dot for q_bar_dot in q_bar_dots.T[:,:,None]])
-        Beta = np.sqrt(K_bar/self.planner.E_bar).squeeze()
+        Beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
         ax[0].plot(self.ts, self.q_T_dots[0,:], 'b', label=r'$q_{T,x}$')
         ax[0].plot(self.ts, Beta*self.Vs[0,:], 'g--', label=r'$V_{T,x}$')
         ax[0].set_ylabel(r'$v\ [m/s]$')
@@ -43,7 +44,7 @@ class PlotSimResults:
     
     def plotEbarBetaError(self, E_bars):
         fig, ax = plt.subplots(2, 1, figsize=(16,9), sharex=True)
-        m_bar = np.array([[self.planner.m, 0, 0], [0, self.planner.m, 0], [0, 0, self.planner.m_r]])
+        m_bar = np.array([[self.roboot.m, 0, 0], [0, self.roboot.m, 0], [0, 0, self.controller.m_r]])
         for i in range(len(E_bars)):
             q_bar_dots = np.vstack((self.q_T_dots[i], self.q_r_dots[i]))
             K_bar = np.concatenate([0.5*q_bar_dot.T@m_bar@q_bar_dot for q_bar_dot in q_bar_dots.T[:,:,None]])
@@ -62,13 +63,13 @@ class PlotSimResults:
     
     def plotEbarPower(self, E_bars):
         fig, ax = plt.subplots(2, 1, figsize=(16,9), sharex=True)
-        m_bar = np.array([[self.planner.m, 0, 0], [0, self.planner.m, 0], [0, 0, self.planner.m_r]])
-        m = np.array([[self.planner.m, 0], [0, self.planner.m]])
+        m_bar = np.array([[self.robot.m, 0, 0], [0, self.robot.m, 0], [0, 0, self.controller.m_r]])
+        m = np.array([[self.robot.m, 0], [0, self.robot.m]])
 
         for i in range(len(E_bars)):
             q_bar_dots = np.vstack((self.q_T_dots[i], self.q_r_dots[i]))
             K = np.concatenate([0.5*q_T_dot.T@m@q_T_dot for q_T_dot in self.q_T_dots[i].T[:,:,None]])
-            K_r = np.array([0.5*self.planner.m_r*q_r_dot**2 for q_r_dot in self.q_r_dots[i]])
+            K_r = np.array([0.5*self.controller.m_r*q_r_dot**2 for q_r_dot in self.q_r_dots[i]])
             K_bar = np.concatenate([0.5*q_bar_dot.T@m_bar@q_bar_dot for q_bar_dot in q_bar_dots.T[:,:,None]])
             K_bar_dot = np.gradient(K_bar.squeeze(), self.ts)
             f_e_power =  np.array([self.q_T_dots[i][:,j].reshape(-1,1).T@self.f_es[i][:,j].reshape(-1,1) for j in range(self.q_T_dots[i].shape[1])]).squeeze()
@@ -122,12 +123,14 @@ class PlotSimResults:
         z_grid = np.arange(z_min, z_max, 0.1) 
          
         p_x, p_z, V_x, V_z = self.createGrid(grid,grid)
-        # p_x, p_z, V_x, V_z = self.createGrid(grid,z_grid)
-
         for i in range(len(p_x[0])):
             for j in range(len(p_x[0])):
                 q = np.array([p_x[i, j], p_z[i, j]]).reshape(-1,1)
-                V = self.planner.plotStep(q)
+                if type(self.planner) is tuple:
+                    if util.touchRamp(self.planner[1].x_s, self.planner[1].x_e, self.planner[1].z_h, q[0,0], q[1,0]):
+                        V = self.planner[1].plotStep(q)
+                    else: V = self.planner[0].plotStep(q)
+                else: V = self.planner.plotStep(q)
                 V_x[i,j] = V[0]
                 V_z[i,j] = V[1]
         ax.quiver(p_x, p_z, V_x, V_z, color='k', pivot='middle', alpha=0.3)
@@ -205,7 +208,7 @@ class TestVelocityField():
         for i in range(len(p_x[0])):
             for j in range(len(p_x[0])):
                 q = np.array([p_x[i, j], p_z[i, j]]).reshape(-1,1)
-                if self.rampPlanner.x_s <= q[0] <= self.rampPlanner.x_e and q[1] <= self.rampPlanner.z_h:
+                if util.touchRamp(self.rampPlanner.x_s, self.rampPlanner.x_e, self.rampPlanner.z_h, q[0,0], q[1,0]):
                     V = self.rampPlanner.plotStep(q)
                 else: V = self.planarPlanner.plotStep(q)
                 V_x[i,j] = V[0]

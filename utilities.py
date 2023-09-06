@@ -1,5 +1,11 @@
 import numpy as np
 
+def touchRamp(x_s, x_e, z_h, x, z):
+        m = z_h / (x_e - x_s)
+        b = -m*x_s
+        z_b = m*x + b
+        return z <= z_b and x_s <= x <= x_e
+
 def computeTransforms(q, q_dot, tool_length):
     '''
     input: 
