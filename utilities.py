@@ -5,14 +5,16 @@ def computeRampParams(x_s, x_e, z_h):
     b = -m * x_s
     return m, b
 
-def computeFloorForce(k):
-    return k*np.array([[0.], [1.]]) # floor force
+def computeFloorForce(k, q_T):
+    Delta = -q_T[1,0]
+    n_hat = np.array([[0.], [1.]])
+    return k*Delta*n_hat
 
 def computeRampForce(k, x_s, x_e, z_h, q_T): 
     m,b = computeRampParams(x_s, x_e, z_h)
     Delta = np.abs(-m*q_T[0,0] + q_T[1,0] - b) / np.sqrt(m**2 + 1)
     n_hat = np.array([[-m], [1.]]) / np.sqrt(1 + m**2)
-    return k * Delta * n_hat
+    return k*Delta*n_hat
      
 def contactFloor(x_s, x_e, q_T):
     x_T, z_T = q_T[0,0], q_T[1,0]

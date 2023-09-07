@@ -105,10 +105,10 @@ class PlanarVelocityField(VelocityPlanner):
         super().__init__(base_planner_params, planar_planner_params)
 
     def setParams(self, planarPlannerParams):
-        self.planar_len, self.alpha = planarPlannerParams
+        self.planar_len, self.alpha, self.delta = planarPlannerParams
         
     def init_V_sym(self): 
-        Q = sp.Matrix([self.q_sym[0], -0.1])
+        Q = sp.Matrix([self.q_sym[0], -self.delta])
         n = (Q - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
         t_hat = sp.Matrix([1, 0])
         self.V_sym = self.planar_len * (n + self.alpha*t_hat)

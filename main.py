@@ -9,7 +9,7 @@ import numpy as np
 
 def runAMSim(sim_time=10, dt=0.01):
     # allocate sim outputs
-    us, Fs, f_es, qs, q_dots, q_Ts, q_T_dots, q_r_dots, V_Ts = [], [], [], [], [], [], [], [], []
+    # us, Fs, f_es, qs, q_dots, q_Ts, q_T_dots, q_r_dots, V_Ts = [], [], [], [], [], [], [], [], []
     # define modules
     planners = PlanarVelocityField(params.BaseAMPlannerParams(), params.PlanarPlannerParams()), RampVelocityField(params.BaseAMPlannerParams(), params.RampPlannerParams())
     if params.obstacle: planner += SuperQuadraticField(params.BasePlannerParams(), params.SuperQuadraticParams())
@@ -17,7 +17,7 @@ def runAMSim(sim_time=10, dt=0.01):
     robot = AerialManipulator(params.AMParams())
     
     # run simulation
-    sim = Sim(planners, controller, robot)
+    sim = Sim(planners, controller, robot, params.surface_k)
     ts, u, F, f_e, q, q_dot, q_r_dot = sim.run(params.AM_q, params.AM_q_dot, params.q_r, params.q_r_dot, params.F_e, sim_time=sim_time, dt=dt)
 
     # get task space variables
@@ -33,16 +33,24 @@ def runAMSim(sim_time=10, dt=0.01):
     else: V_T, V_T_dot = zip(*[sim.planner.step(q_i, q_dot_i) for q_i, q_dot_i in zip(np.concatenate(q,axis=1).T[:,:,None], np.concatenate(q_dot,axis=1).T[:,:,None])])
 
     # concatenate data
-    us.append(np.concatenate(u,axis=1)), Fs.append(np.concatenate(F,axis=1)), f_es.append(np.concatenate(f_e,axis=1)), qs.append(np.concatenate(q,axis=1)), q_dots.append(np.concatenate(q_dot,axis=1)), q_Ts.append(np.concatenate(q_T,axis=1)), q_T_dots.append(np.concatenate(q_T_dot,axis=1)), q_r_dots.append(q_r_dot), V_Ts.append(np.concatenate(V_T,axis=1))
+    us, Fs, f_es, qs, q_dots, q_Ts, q_T_dots, q_r_dots, V_Ts =  np.concatenate(u,axis=1), np.concatenate(F,axis=1), np.concatenate(f_e,axis=1), np.concatenate(q,axis=1), np.concatenate(q_dot,axis=1), np.concatenate(q_T,axis=1), np.concatenate(q_T_dot,axis=1), (q_r_dot), np.concatenate(V_T,axis=1)
 
-    # plot
+    # plot 1
     fig, ax = plt.subplots(1, 1, figsize=(16,9), sharex=True)
     plotter = PlotAMSimResults(planners, controller, robot)
-    plotter.plotRamp(fig, ax, q_Ts)
+    plotter.plotRamp(fig, ax, q_Ts, color = 'black')
     plotter.plotRobot(fig, ax, ts, qs, us)
     plotter.plotVelocityField(fig, ax, qs)
-    plotter.plotConfigState(fig, ax, qs, color='r')
-    plotter.plotTaskState(fig, ax, q_Ts, color='g')
+    plotter.plotConfigState(fig, ax, qs, color='blue')
+    plotter.plotTaskState(fig, ax, q_Ts, color='green')
+
+    # plot 2
+    fig, ax = plt.subplots(2, 1, figsize=(16,9), sharex=True)
+    plotter.plotPowerAnnihilation(fig, ax, ts, Fs, q_T_dots, q_r_dots)
+
+    # plot 3
+    fig, ax = plt.subplots(3, 1, figsize=(16,9), sharex=True)
+    plotter.plotPassivity(fig, ax, ts, q_T_dots, q_r_dots, f_es)
 
     plt.show()
 
