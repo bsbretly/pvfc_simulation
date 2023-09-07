@@ -33,7 +33,7 @@ class VelocityPlanner:
     
     def plotStep(self, q_T):
         return self.computeVelocityField(q_T)
-        1
+
     def computeVelocityField(self, q_T):
         try:
             Vbar = self.field(float(q_T[0]), float(q_T[1]))

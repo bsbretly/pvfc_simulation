@@ -7,12 +7,10 @@ import utilities as util
 import params
 import numpy as np
 
-def ramp_condition(q, rampPlanner):
-    return rampPlanner.x_s <= q[0,0] <= rampPlanner.x_e and q[1,0] <= rampPlanner.z_h
-
 def runAMSim(sim_time=10, dt=0.01):
-    # define modules
+    # allocate sim outputs
     us, Fs, f_es, qs, q_dots, q_Ts, q_T_dots, q_r_dots, V_Ts = [], [], [], [], [], [], [], [], []
+    # define modules
     planners = PlanarVelocityField(params.BaseAMPlannerParams(), params.PlanarPlannerParams()), RampVelocityField(params.BaseAMPlannerParams(), params.RampPlannerParams())
     if params.obstacle: planner += SuperQuadraticField(params.BasePlannerParams(), params.SuperQuadraticParams())
     controller = TaskPVFC(params.AMParams(), params.ControllerParams())
@@ -24,9 +22,11 @@ def runAMSim(sim_time=10, dt=0.01):
 
     # get task space variables
     q_T, q_T_dot = zip(*[util.configToTask(q_i, q_dot_i, robot.dynamics.tool_length) for q_i, q_dot_i in zip(np.concatenate(q,axis=1).T[:,:,None], np.concatenate(q_dot,axis=1).T[:,:,None])])
+
+    # get desired velocity field
     if type(planners) is tuple:
         planner_results = [
-            planners[1].step(q_i, q_dot_i) if ramp_condition(q_i, planners[1]) else planners[0].step(q_i, q_dot_i)
+            planners[1].step(q_i, q_dot_i) if util.contactRamp(planners[1].x_s, planners[1].x_e, planners[1].z_h, q_i) else planners[0].step(q_i, q_dot_i)
             for q_i, q_dot_i in zip(np.concatenate(q, axis=1).T[:,:,None], np.concatenate(q_dot, axis=1).T[:,:,None])
         ]
         V_T, V_T_dot = zip(*planner_results)
@@ -37,18 +37,19 @@ def runAMSim(sim_time=10, dt=0.01):
 
     # plot
     fig, ax = plt.subplots(1, 1, figsize=(16,9), sharex=True)
-    plotter = PlotAMSimResults(planners, controller, robot,ts, us, Fs, f_es, qs, q_dots, q_Ts, q_T_dots, q_r_dots, V_Ts)
+    plotter = PlotAMSimResults(planners, controller, robot)
     plotter.plotRamp(fig, ax, q_Ts)
     plotter.plotRobot(fig, ax, ts, qs, us)
-    plotter.plotVelocityField(fig, ax, q_Ts)
+    plotter.plotVelocityField(fig, ax, qs)
     plotter.plotConfigState(fig, ax, qs, color='r')
-    plotter.plotTaskState(fig, ax, color='g')
+    plotter.plotTaskState(fig, ax, q_Ts, color='g')
 
     plt.show()
 
 def runQuadSim(sim_time=10, dt=0.01):
-    # define modules
+    # allocate sim outputs
     us, Fs, f_es, qs, q_dots, q_r_dots, V_Ts = [], [], [], [], [], [], []
+    # define modules
     planner = PointVelocityField(params.BaseQuadPlannerParams(), params.PointPlannerParams())
     if params.obstacle: planner += SuperQuadraticField(params.BasePlannerParams(), params.SuperQuadraticParams())
     controller = TranslationalPVFC(params.QuadrotorParams(), params.ControllerParams())
@@ -90,6 +91,4 @@ if __name__ == '__main__':
     runAMSim(sim_time=60)
     # runQuadSim(sim_time=90)
     # runTestVelocityField()
-    # TODO sim for quad moving in a circle
-    # TODO sim for quad moving to desired (x, z) point
     

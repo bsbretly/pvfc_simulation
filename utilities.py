@@ -14,11 +14,11 @@ def computeRampForce(k, x_s, x_e, z_h, q_T):
     n_hat = np.array([[-m], [1.]]) / np.sqrt(1 + m**2)
     return k * Delta * n_hat
      
-def touchFloor(x_s, x_e, q_T):
+def contactFloor(x_s, x_e, q_T):
     x_T, z_T = q_T[0,0], q_T[1,0]
     return (x_T < x_s or x_T > x_e) and z_T <= 0
 
-def touchRamp(x_s, x_e, z_h, q_T):
+def contactRamp(x_s, x_e, z_h, q_T):
     x_T, z_T = q_T[0,0], q_T[1,0]
     m,b = computeRampParams(x_s, x_e, z_h)
     z_b = m*x_T + b

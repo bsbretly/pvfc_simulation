@@ -138,12 +138,12 @@ class PlotSimResults:
         p_x, p_z, V_x, V_z = self.createGrid(grid,grid)
         for i in range(len(p_x[0])):
             for j in range(len(p_x[0])):
-                q = np.array([p_x[i, j], p_z[i, j]]).reshape(-1,1)
+                q_T = np.array([p_x[i, j], p_z[i, j]]).reshape(-1,1)
                 if type(self.planner) is tuple:
-                    if util.touchRamp(self.planner[1].x_s, self.planner[1].x_e, self.planner[1].z_h, q):
-                        V = self.planner[1].plotStep(q)
-                    else: V = self.planner[0].plotStep(q)
-                else: V = self.planner.plotStep(q)
+                    if util.contactRamp(self.planner[1].x_s, self.planner[1].x_e, self.planner[1].z_h, q_T):
+                        V = self.planner[1].plotStep(q_T)
+                    else: V = self.planner[0].plotStep(q_T)
+                else: V = self.planner.plotStep(q_T)
                 V_x[i,j] = V[0]
                 V_z[i,j] = V[1]
         ax.quiver(p_x, p_z, V_x, V_z, color='k', pivot='middle', alpha=0.3)
@@ -180,12 +180,11 @@ class PlotSimResults:
 
 class PlotAMSimResults(PlotSimResults):
     #TODO: Refractor to properly use inheritance
-    def __init__(self, planner, controller, robot, ts, us, Fs, f_es, qs, q_dots, q_Ts, q_T_dots, q_r_dots, Vs):
-        super().__init__(planner, controller, robot)#, ts, us, Fs, f_es, qs, q_dots, q_r_dots, Vs)
-        self.q_Ts, self.q_T_dots = q_Ts, q_T_dots
+    def __init__(self, planner, controller, robot):
+        super().__init__(planner, controller, robot)
     
-    def plotTaskState(self, fig, ax, color='r', linestyle='--'):
-        ax.plot(self.q_Ts[0][0,:], self.q_Ts[0][1,:], color=color, linestyle=linestyle)
+    def plotTaskState(self, fig, ax, q_Ts, color='r', linestyle='--'):
+        ax.plot(q_Ts[0][0,:], q_Ts[0][1,:], color=color, linestyle=linestyle)
     
     def display(self, fig, ax, q_t, u_t):
         x, z, theta, Beta = q_t[0], q_t[1], q_t[2], q_t[3]
@@ -221,7 +220,7 @@ class TestVelocityField():
         for i in range(len(p_x[0])):
             for j in range(len(p_x[0])):
                 q = np.array([p_x[i, j], p_z[i, j]]).reshape(-1,1)
-                if util.touchRamp(self.rampPlanner.x_s, self.rampPlanner.x_e, self.rampPlanner.z_h, q[0,0], q[1,0]):
+                if util.contactRamp(self.rampPlanner.x_s, self.rampPlanner.x_e, self.rampPlanner.z_h, q[0,0], q[1,0]):
                     V = self.rampPlanner.plotStep(q)
                 else: V = self.planarPlanner.plotStep(q)
                 V_x[i,j] = V[0]

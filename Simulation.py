@@ -15,10 +15,10 @@ class Sim:
             # implement external force due to ramp interaction
             if type(self.planner) is tuple:
                 q_T, q_T_dot = util.configToTask(q, q_dot, self.robot.dynamics.tool_length)
-                if util.touchFloor(self.planner[1].x_s, self.planner[1].x_e, q_T):
+                if util.contactFloor(self.planner[1].x_s, self.planner[1].x_e, q_T):
                     path_planner = self.planner[0]
                     f_e = util.computeFloorForce(self.k) 
-                elif util.touchRamp(self.planner[1].x_s, self.planner[1].x_e, self.planner[1].z_h, q_T):
+                elif util.contactRamp(self.planner[1].x_s, self.planner[1].x_e, self.planner[1].z_h, q_T):
                     path_planner = self.planner[1]
                     f_e = util.computeRampForce(self.k, self.planner[1].x_s, self.planner[1].x_e, self.planner[1].z_h, q_T)
                 else: 
