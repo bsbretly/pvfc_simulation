@@ -19,7 +19,7 @@ F_e = np.array([[-0.1], [0.2]])
 
 # Planner parameters
 planar_length, planar_alpha = 5., 2.
-x_s, x_e, z_h = 2., 3., 0.5 # ramp x start, ramp x end, ramp z final height
+x_s, x_e, z_h = 2., 3., 0.25 # ramp x start, ramp x end, ramp z final height
 x_d, z_d = 0.5, 1.
 obstacle = False
 obs_x, obs_z = 1., 0.
@@ -33,7 +33,7 @@ RampPlannerParams = namedtuple('PlanarPlannerParams', ['V_l', 'V_alpha', 'x_s', 
 SuperQuadraticParams = namedtuple('SuperQuadraticParams', ['obs_x', 'obs_z', 'obs_m', 'obs_n', 'obs_L', 'obs_len'], defaults=(obs_x, obs_z, obs_m, obs_n, obs_L, obs_len))
 
 # initial conditions
-AM_q, AM_q_dot = np.array([[0., .5, 0.*DEG_TO_RAD, 90.*DEG_TO_RAD]]).T, np.array([[0.1 , -0.05, 0., 0.]]).T # q = [x, z, theta, Beta]^T
+AM_q, AM_q_dot = np.array([[0., .4, 0.*DEG_TO_RAD, 90.*DEG_TO_RAD]]).T, np.array([[0.1 , -0.05, 0., 0.]]).T # q = [x, z, theta, Beta]^T
 Quad_q, Quad_q_dot = np.array([[0., 0., 0.*DEG_TO_RAD]]).T, np.array([[0. , 0.05, 0.]]).T # q = [x, z, theta]^T
 q_r, q_r_dot = 0., 0.
 

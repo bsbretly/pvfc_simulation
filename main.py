@@ -38,10 +38,12 @@ def runAMSim(sim_time=10, dt=0.01):
     # plot
     fig, ax = plt.subplots(1, 1, figsize=(16,9), sharex=True)
     plotter = PlotAMSimResults(planners, controller, robot,ts, us, Fs, f_es, qs, q_dots, q_Ts, q_T_dots, q_r_dots, V_Ts)
+    plotter.plotRamp(fig, ax, q_Ts)
     plotter.plotRobot(fig, ax, ts, qs, us)
     plotter.plotVelocityField(fig, ax, q_Ts)
-    plotter.plotConfigState(fig, ax, color='r')
+    plotter.plotConfigState(fig, ax, qs, color='r')
     plotter.plotTaskState(fig, ax, color='g')
+
     plt.show()
 
 def runQuadSim(sim_time=10, dt=0.01):

@@ -108,7 +108,7 @@ class PlanarVelocityField(VelocityPlanner):
         self.planar_len, self.alpha = planarPlannerParams
         
     def init_V_sym(self): 
-        Q = sp.Matrix([self.q_sym[0], 0.])
+        Q = sp.Matrix([self.q_sym[0], -0.1])
         n = (Q - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
         t_hat = sp.Matrix([1, 0])
         self.V_sym = self.planar_len * (n + self.alpha*t_hat)

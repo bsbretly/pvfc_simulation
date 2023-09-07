@@ -7,10 +7,23 @@ plt.rcParams['text.usetex'] = True
 plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
 
 class PlotSimResults:
-    def __init__(self, planner, controller, robot, ts, us, Fs, f_es, qs, q_dots, q_r_dots, Vs):
+    def __init__(self, planner, controller, robot):#, ts, us, Fs, f_es, qs, q_dots, q_r_dots, Vs):
         self.planner, self.controller, self.robot = planner, controller, robot
-        self.ts, self.us, self.Fs, self.f_es, self.qs, self.q_dots, self.q_r_dots, self.Vs = ts, us, Fs, f_es, qs, q_dots, q_r_dots, Vs
+        # self.ts, self.us, self.Fs, self.f_es, self.qs, self.q_dots, self.q_r_dots, self.Vs = ts, us, Fs, f_es, qs, q_dots, q_r_dots, Vs
         fp.setupPlotParams()
+
+    def plotRamp(self, fig, ax, q_Ts):
+        if not type(self.planner) is tuple: raise NotImplementedError("Must use plotRamp with a piece-wise planner.")
+        m,b = util.computeRampParams(self.planner[1].x_s, self.planner[1].x_e, self.planner[1].z_h)
+
+        x1 = np.linspace(0, self.planner[1].x_s, 100)  # Before the ramp
+        x2 = np.linspace(self.planner[1].x_s, self.planner[1].x_e, 100)  # On the ramp
+        x3 = np.linspace(self.planner[1].x_e, q_Ts[0][0,-1], 100)  # After the ramp
+
+        x = np.concatenate([x1, x2, x3])
+        y = np.concatenate([np.zeros_like(x1), m * x2 + b, np.zeros_like(x3)])
+        ax.plot(x, y, 'r-', linewidth=2)
+        return fig, ax
 
     def plotPositionTracking(self, fig, ax, x_d, z_d):
         ax[0].plot(self.ts, np.zeros_like(self.ts) + x_d, 'g--', label=r'$x_d$')
@@ -127,7 +140,7 @@ class PlotSimResults:
             for j in range(len(p_x[0])):
                 q = np.array([p_x[i, j], p_z[i, j]]).reshape(-1,1)
                 if type(self.planner) is tuple:
-                    if util.touchRamp(self.planner[1].x_s, self.planner[1].x_e, self.planner[1].z_h, q[0,0], q[1,0]):
+                    if util.touchRamp(self.planner[1].x_s, self.planner[1].x_e, self.planner[1].z_h, q):
                         V = self.planner[1].plotStep(q)
                     else: V = self.planner[0].plotStep(q)
                 else: V = self.planner.plotStep(q)
@@ -141,8 +154,8 @@ class PlotSimResults:
         p_x, p_y = np.meshgrid(x, y, indexing='ij')
         return p_x, p_y, np.zeros((x.size,y.size)), np.zeros((x.size,y.size))
     
-    def plotConfigState(self, fig, ax, color='r', linestyle='--'):
-        ax.plot(self.qs[0][0,:], self.qs[0][1,:], color=color, linestyle=linestyle)
+    def plotConfigState(self, fig, ax, qs, color='r', linestyle='--'):
+        ax.plot(qs[0][0,:], qs[0][1,:], color=color, linestyle=linestyle)
 
     def display(self, fig, ax, q_t, u_t):
         x, z, theta = q_t[0], q_t[1], q_t[2]
@@ -168,7 +181,7 @@ class PlotSimResults:
 class PlotAMSimResults(PlotSimResults):
     #TODO: Refractor to properly use inheritance
     def __init__(self, planner, controller, robot, ts, us, Fs, f_es, qs, q_dots, q_Ts, q_T_dots, q_r_dots, Vs):
-        super().__init__(planner, controller, robot, ts, us, Fs, f_es, qs, q_dots, q_r_dots, Vs)
+        super().__init__(planner, controller, robot)#, ts, us, Fs, f_es, qs, q_dots, q_r_dots, Vs)
         self.q_Ts, self.q_T_dots = q_Ts, q_T_dots
     
     def plotTaskState(self, fig, ax, color='r', linestyle='--'):
