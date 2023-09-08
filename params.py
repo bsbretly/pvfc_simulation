@@ -16,9 +16,9 @@ ControllerParams = namedtuple('ControllerParams', ['m_r', 'E_bar', 'gamma', 'the
 
 # External force
 F_e = np.array([[-0.1], [0.2]]) # precomputed external force
-plane_k = .2
-plane_mu = .6
-ramp_k = .2
+plane_k = .2 # stiffness
+plane_mu = .6 # kinetic friction coefficient
+ramp_k = 1.
 ramp_mu = .6
 
 PlaneForceParams = namedtuple('PlaneForceParams', ['plane_k', 'plane_mu'], defaults=(plane_k, plane_mu))

@@ -247,9 +247,10 @@ class TestVelocityField():
         for i in range(len(p_x[0])):
             for j in range(len(p_x[0])):
                 q = np.array([p_x[i, j], p_z[i, j]]).reshape(-1,1)
-                if util.contactRamp(self.rampPlanner.x_s, self.rampPlanner.x_e, self.rampPlanner.z_h, q[0,0], q[1,0]):
-                    V = self.rampPlanner.plotStep(q)
-                else: V = self.planarPlanner.plotStep(q)
+                # if util.contactRamp(self.rampPlanner.x_s, self.rampPlanner.x_e, self.rampPlanner.z_h, q):
+                #     V = self.rampPlanner.plotStep(q)
+                # else: V = self.planarPlanner.plotStep(q)
+                V = self.rampPlanner.plotStep(q)
                 V_x[i,j] = V[0]
                 V_z[i,j] = V[1]
         ax.quiver(p_x, p_z, V_x, V_z, color='k', pivot='middle', alpha=0.3)

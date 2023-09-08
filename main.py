@@ -97,7 +97,7 @@ def runTestVelocityField():
 
 if __name__ == '__main__':
     # Choose which sim to run, sims are in 2D (x, z) plane
-    runAMSim(sim_time=60)
+    # runAMSim(sim_time=60)
     # runQuadSim(sim_time=90)
-    # runTestVelocityField()
+    runTestVelocityField()
     
