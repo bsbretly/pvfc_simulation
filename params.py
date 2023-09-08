@@ -15,8 +15,14 @@ theta_K_p, theta_K_d = 200., 20.
 ControllerParams = namedtuple('ControllerParams', ['m_r', 'E_bar', 'gamma', 'theta_K_p', 'theta_K_d'], defaults=(m_r, E_bar, gamma, theta_K_p, theta_K_d))
 
 # External force
-F_e = np.array([[-0.1], [0.2]])
-surface_k = .2 # surface interaction stiffness
+F_e = np.array([[-0.1], [0.2]]) # precomputed external force
+plane_k = .2
+plane_mu = .6
+ramp_k = .2
+ramp_mu = .6
+
+PlaneForceParams = namedtuple('PlaneForceParams', ['plane_k', 'plane_mu'], defaults=(plane_k, plane_mu))
+RampForceParams = namedtuple('RampForceParams', ['ramp_k', 'ramp_mu'], defaults=(ramp_k, ramp_mu))
 
 # Planner parameters
 planar_length, planar_alpha = 5., 2.
@@ -31,7 +37,7 @@ BaseQuadPlannerParams = namedtuple('BaseQuadPlannerParams', ['m', 'm_r', 'E_bar'
 BaseAMPlannerParams = namedtuple('BaseAMPlannerParams', ['m', 'm_r', 'tool_length', 'E_bar'], defaults=(m, m_r, tool_length, E_bar))
 PointPlannerParams = namedtuple('PointPlannerParams', ['V_l', 'V_alpha', 'x_d', 'z_d'], defaults=(planar_length, planar_alpha, x_d, z_d))
 PlanarPlannerParams = namedtuple('PlanarPlannerParams', ['V_l', 'V_alpha', 'delta'], defaults=(planar_length, planar_alpha, delta))
-RampPlannerParams = namedtuple('PlanarPlannerParams', ['V_l', 'V_alpha', 'x_s', 'x_e', 'z_h'], defaults=(planar_length, planar_alpha, x_s, x_e, z_h))
+RampPlannerParams = namedtuple('PlanarPlannerParams', ['V_l', 'V_alpha', 'delta', 'x_s', 'x_e', 'z_h'], defaults=(planar_length, planar_alpha, delta, x_s, x_e, z_h))
 SuperQuadraticParams = namedtuple('SuperQuadraticParams', ['obs_x', 'obs_z', 'obs_m', 'obs_n', 'obs_L', 'obs_len'], defaults=(obs_x, obs_z, obs_m, obs_n, obs_L, obs_len))
 
 # initial conditions

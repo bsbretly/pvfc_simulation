@@ -15,9 +15,10 @@ def runAMSim(sim_time=10, dt=0.01):
     if params.obstacle: planner += SuperQuadraticField(params.BasePlannerParams(), params.SuperQuadraticParams())
     controller = TaskPVFC(params.AMParams(), params.ControllerParams())
     robot = AerialManipulator(params.AMParams())
+
     
     # run simulation
-    sim = Sim(planners, controller, robot, params.surface_k)
+    sim = Sim(planners, controller, robot, params.PlaneForceParams(), params.RampForceParams())
     ts, u, F, f_e, q, q_dot, q_r_dot = sim.run(params.AM_q, params.AM_q_dot, params.q_r, params.q_r_dot, params.F_e, sim_time=sim_time, dt=dt)
 
     # get task space variables

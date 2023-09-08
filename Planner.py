@@ -108,8 +108,8 @@ class PlanarVelocityField(VelocityPlanner):
         self.planar_len, self.alpha, self.delta = planarPlannerParams
         
     def init_V_sym(self): 
-        Q = sp.Matrix([self.q_sym[0], -self.delta])
-        n = (Q - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
+        X_prime = sp.Matrix([self.q_sym[0], -self.delta]) # X_prime is the point "into" the surface to facilitate interaction
+        n = (X_prime - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
         t_hat = sp.Matrix([1, 0])
         self.V_sym = self.planar_len * (n + self.alpha*t_hat)
 
@@ -121,12 +121,12 @@ class RampVelocityField(VelocityPlanner):
 
     def setParams(self, rampPlannerParams):
         # ramp starts at x_s, ends at x_e, and has final height z_h
-        self.planar_len, self.alpha, self.x_s, self.x_e, self.z_h = rampPlannerParams
+        self.planar_len, self.alpha, self.delta, self.x_s, self.x_e, self.z_h = rampPlannerParams
         
-    def init_V_sym(self): 
-        Q = sp.Matrix([self.q_sym[0], self.q_sym[1]])
-        n = (Q - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
-        # tangent vector is the equation of a line
+    def init_V_sym(self):
+        m, b = util.computeRampParams(self.x_s, self.x_e, self.z_h)
+        X_prime = sp.Matrix([self.q_sym[0], m*self.q_sym[0] + (b - self.delta)]) # X_prime is the point "into" the surface to facilitate interaction
+        n = (X_prime - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
         m = self.z_h / (self.x_e - self.x_s)
         t_hat = 1/np.sqrt(1 + m**2)*sp.Matrix([1, m])
         self.V_sym = self.planar_len * (n + self.alpha*t_hat)

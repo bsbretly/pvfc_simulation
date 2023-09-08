@@ -5,18 +5,26 @@ def computeRampParams(x_s, x_e, z_h):
     b = -m * x_s
     return m, b
 
-def computeFloorForce(k, q_T):
-    Delta = -q_T[1,0]
+def computePlaneForce(k, mu, q_T):
+    Delta = -q_T[1,0] # distance into the floor
     n_hat = np.array([[0.], [1.]])
-    return k*Delta*n_hat
+    force_scaler = k*Delta
+    normal_force = force_scaler*n_hat
+    t_hat = np.array([[-1.], [0.]])
+    tangent_force = mu*force_scaler*t_hat
+    return normal_force + tangent_force
 
-def computeRampForce(k, x_s, x_e, z_h, q_T): 
-    m,b = computeRampParams(x_s, x_e, z_h)
-    Delta = np.abs(-m*q_T[0,0] + q_T[1,0] - b) / np.sqrt(m**2 + 1)
+def computeRampForce(k, mu, x_s, x_e, z_h, q_T): 
+    m, b = computeRampParams(x_s, x_e, z_h)
+    Delta = np.abs(-m*q_T[0,0] + q_T[1,0] - b) / np.sqrt(m**2 + 1) # distance into the ramp
     n_hat = np.array([[-m], [1.]]) / np.sqrt(1 + m**2)
-    return k*Delta*n_hat
-     
-def contactFloor(x_s, x_e, q_T):
+    force_scaler = k*Delta
+    normal_force = force_scaler*n_hat
+    t_hat = np.array([[1.], [m]]) / np.sqrt(1 + m**2)
+    tangent_force = mu*force_scaler*t_hat
+    return normal_force + tangent_force
+
+def contactPlane(x_s, x_e, q_T):
     x_T, z_T = q_T[0,0], q_T[1,0]
     return (x_T < x_s or x_T > x_e) and z_T <= 0
 
