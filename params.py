@@ -25,9 +25,10 @@ PlaneForceParams = namedtuple('PlaneForceParams', ['plane_k', 'plane_mu'], defau
 RampForceParams = namedtuple('RampForceParams', ['ramp_k', 'ramp_mu'], defaults=(ramp_k, ramp_mu))
 
 # Planner parameters
-planar_length, planar_alpha = 5., 2.
+planar_tangent, planar_normal = 1., 1.
+ramp_tangent, ramp_normal = 5., .5
 delta = 0.1 # distance "beyond" surface to facilitate interaction
-x_s, x_e, z_h = 2., 3., 0.25 # ramp x start, ramp x end, ramp z final height
+x_s, x_e, z_h = 0., 1., 1. # ramp x start, ramp x end, ramp z final height
 x_d, z_d = 0.5, 1.
 obstacle = False
 obs_x, obs_z = 1., 0.
@@ -35,9 +36,9 @@ obs_m, obs_n, obs_L, obs_len = 5., 2., 1., 5.
 
 BaseQuadPlannerParams = namedtuple('BaseQuadPlannerParams', ['m', 'm_r', 'E_bar'], defaults=(m, m_r, E_bar))
 BaseAMPlannerParams = namedtuple('BaseAMPlannerParams', ['m', 'm_r', 'tool_length', 'E_bar'], defaults=(m, m_r, tool_length, E_bar))
-PointPlannerParams = namedtuple('PointPlannerParams', ['V_l', 'V_alpha', 'x_d', 'z_d'], defaults=(planar_length, planar_alpha, x_d, z_d))
-PlanarPlannerParams = namedtuple('PlanarPlannerParams', ['V_l', 'V_alpha', 'delta'], defaults=(planar_length, planar_alpha, delta))
-RampPlannerParams = namedtuple('PlanarPlannerParams', ['V_l', 'V_alpha', 'delta', 'x_s', 'x_e', 'z_h'], defaults=(planar_length, planar_alpha, delta, x_s, x_e, z_h))
+PointPlannerParams = namedtuple('PointPlannerParams', ['V_l', 'V_alpha', 'x_d', 'z_d'], defaults=(planar_tangent, planar_normal, x_d, z_d))
+PlanarPlannerParams = namedtuple('PlanarPlannerParams', ['V_l', 'V_alpha', 'delta'], defaults=(planar_tangent, planar_normal, delta))
+RampPlannerParams = namedtuple('PlanarPlannerParams', ['V_l', 'V_alpha', 'delta', 'x_s', 'x_e', 'z_h'], defaults=(ramp_tangent, ramp_normal, delta, x_s, x_e, z_h))
 SuperQuadraticParams = namedtuple('SuperQuadraticParams', ['obs_x', 'obs_z', 'obs_m', 'obs_n', 'obs_L', 'obs_len'], defaults=(obs_x, obs_z, obs_m, obs_n, obs_L, obs_len))
 
 # initial conditions

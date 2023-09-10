@@ -2,7 +2,7 @@ from Simulation import Sim
 from Planner import PointVelocityField, PlanarVelocityField, RampVelocityField, SuperQuadraticField
 from Controller import TranslationalPVFC, TaskPVFC
 from Robot import Quadrotor, AerialManipulator
-from Plotter import PlotSimResults, PlotAMSimResults, TestVelocityField, plt 
+from Plotter import PlotSimResults, PlotAMSimResults, VizVelocityField, plt 
 import utilities as util
 import params
 import numpy as np
@@ -11,7 +11,12 @@ def runAMSim(sim_time=10, dt=0.01):
     # allocate sim outputs
     # us, Fs, f_es, qs, q_dots, q_Ts, q_T_dots, q_r_dots, V_Ts = [], [], [], [], [], [], [], [], []
     # define modules
-    planners = PlanarVelocityField(params.BaseAMPlannerParams(), params.PlanarPlannerParams()), RampVelocityField(params.BaseAMPlannerParams(), params.RampPlannerParams())
+    planner = PlanarVelocityField(params.BaseAMPlannerParams(), params.PlanarPlannerParams(), visualize=True)
+    planners = [
+                RampVelocityField(params.BaseAMPlannerParams(), params.RampPlannerParams(), visualize=True),
+                ]
+    for added_planner in planners:
+        planner += added_planner
     if params.obstacle: planner += SuperQuadraticField(params.BasePlannerParams(), params.SuperQuadraticParams())
     controller = TaskPVFC(params.AMParams(), params.ControllerParams())
     robot = AerialManipulator(params.AMParams())
@@ -81,15 +86,19 @@ def runQuadSim(sim_time=10, dt=0.01):
     plotter.plotConfigState(fig, ax, color='r')
     plt.show()
 
-def runTestVelocityField():
-    planarPlanner = PlanarVelocityField(params.BaseAMPlannerParams(), params.PlanarPlannerParams())
-    rampPlanner = RampVelocityField(params.BaseAMPlannerParams(), params.RampPlannerParams())
-    plotter = TestVelocityField(planarPlanner, rampPlanner)
+def runVizVelocityField():
+    planner = PlanarVelocityField(params.BaseAMPlannerParams(), params.PlanarPlannerParams(), visualize=True)
+    planners = [
+                RampVelocityField(params.BaseAMPlannerParams(), params.RampPlannerParams(), visualize=True),
+                ]
+    for added_planner in planners:
+        planner += added_planner
+    plotter = VizVelocityField(planner)
     # plot
     fig, ax = plt.subplots(1, 1, figsize=(16,9), sharex=True)
     # make a test grid of states
-    x = np.arange(0, 5, 0.1)
-    z = np.arange(0, 5, 0.1)
+    x = np.arange(0, 3, 0.1)
+    z = np.arange(0, 3, 0.1)
     p_x, p_y = np.meshgrid(x, z, indexing='ij')
     V_x, V_y = np.zeros((x.size,z.size)), np.zeros((x.size,z.size))
     plotter.plotVelocityField(fig, ax, p_x, p_y, V_x, V_y)
@@ -99,5 +108,5 @@ if __name__ == '__main__':
     # Choose which sim to run, sims are in 2D (x, z) plane
     # runAMSim(sim_time=60)
     # runQuadSim(sim_time=90)
-    runTestVelocityField()
+    runVizVelocityField()
     
