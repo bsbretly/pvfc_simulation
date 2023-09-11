@@ -28,13 +28,7 @@ def runAMSim(sim_time=10, dt=0.01):
     q_T, q_T_dot = zip(*[util.configToTask(q_i, q_dot_i, robot.dynamics.tool_length) for q_i, q_dot_i in zip(np.concatenate(q,axis=1).T[:,:,None], np.concatenate(q_dot,axis=1).T[:,:,None])])
 
     # get desired velocity field
-    if type(planners) is tuple:
-        planner_results = [
-            planners[1].step(q_i, q_dot_i) if util.contactRamp(planners[1].x_s, planners[1].x_e, planners[1].z_h, q_i) else planners[0].step(q_i, q_dot_i)
-            for q_i, q_dot_i in zip(np.concatenate(q, axis=1).T[:,:,None], np.concatenate(q_dot, axis=1).T[:,:,None])
-        ]
-        V_T, V_T_dot = zip(*planner_results)
-    else: V_T, V_T_dot = zip(*[sim.planner.step(q_i, q_dot_i) for q_i, q_dot_i in zip(np.concatenate(q,axis=1).T[:,:,None], np.concatenate(q_dot,axis=1).T[:,:,None])])
+    V_T, V_T_dot = zip(*[sim.planner.step(q_i, q_dot_i) for q_i, q_dot_i in zip(np.concatenate(q,axis=1).T[:,:,None], np.concatenate(q_dot,axis=1).T[:,:,None])])
 
     # concatenate data
     us, Fs, f_es, qs, q_dots, q_Ts, q_T_dots, q_r_dots, V_Ts =  np.concatenate(u,axis=1), np.concatenate(F,axis=1), np.concatenate(f_e,axis=1), np.concatenate(q,axis=1), np.concatenate(q_dot,axis=1), np.concatenate(q_T,axis=1), np.concatenate(q_T_dot,axis=1), (q_r_dot), np.concatenate(V_T,axis=1)
