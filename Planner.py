@@ -92,46 +92,75 @@ class PointVelocityField(VelocityPlanner):
         super().__init__(base_planner_params, point_planner_params, visualize=visualize)
 
     def setParams(self, point_planner_params):
-        self.planar_len, self.alpha, self.x_d, self.z_d = point_planner_params
+        self.point_line_normal_gain, self.point_line_tangent_gain, self.x_d, self.z_d = point_planner_params
         
     def computeSymbolicV(self): 
         Q = sp.Matrix([self.x_d, self.z_d])
         n = (Q - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
         t_hat = sp.Matrix([0, 0])
-        self.symbolic_V = self.planar_len * (n + self.alpha*t_hat)
+        self.symbolic_V = self.point_line_normal_gain * (n + self.point_line_tangent_gain*t_hat)
 
 
-class PlanarVelocityField(VelocityPlanner):
+class HorinzontalLineVelocityField(VelocityPlanner):
     # Velocity field from https://ieeexplore.ieee.org/document/8779551
-    def __init__(self, base_planner_params, planar_planner_params, visualize=False):
-        super().__init__(base_planner_params, planar_planner_params, visualize=visualize)
+    def __init__(self, base_planner_params, horizontal_line_planner_params, visualize=False):
+        super().__init__(base_planner_params, horizontal_line_planner_params, visualize=visualize)
 
-    def setParams(self, planarPlannerParams):
-        self.planar_len, self.alpha, self.delta = planarPlannerParams
+    def setParams(self, horizontal_line_planner_params):
+        self.horizontal_line_normal_gain, self.horizontal_line_tangent_gain, self.z_intercept, self.delta = horizontal_line_planner_params
         
     def computeSymbolicV(self): 
-        X_prime = sp.Matrix([self.q_sym[0], -self.delta]) # X_prime is the point "into" the surface to facilitate interaction
+        X_prime = sp.Matrix([self.q_sym[0], self.z_intercept - self.delta]) # X_prime is the point "into" the surface to facilitate interaction
         n = (X_prime - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
         t_hat = sp.Matrix([1, 0])
-        self.symbolic_V = self.planar_len * (n + self.alpha*t_hat)
+        self.symbolic_V = self.horizontal_line_normal_gain * (n + self.horizontal_line_tangent_gain*t_hat)
 
 
-class RampVelocityField(VelocityPlanner):
+class VerticalLineVelocityField(VelocityPlanner):
+    # Velocity field from https://ieeexplore.ieee.org/document/8779551
+    def __init__(self, base_planner_params, vertical_line_planner_params, visualize=False):
+        super().__init__(base_planner_params, vertical_line_planner_params, visualize=visualize)
+
+    def setParams(self, vertical_line_planner_params):
+        self.vertical_line_normal_gain, self.vertical_line_tangent_gain, self.x_intercept, self.delta = vertical_line_planner_params
+        
+    def computeSymbolicV(self): 
+        X_prime = sp.Matrix([self.x_intercept + self.delta, self.q_sym[1]]) # X_prime is the point "into" the surface to facilitate interaction
+        n = (X_prime - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
+        t_hat = sp.Matrix([0, -1])
+        self.symbolic_V = self.vertical_line_normal_gain * (n + self.vertical_line_tangent_gain*t_hat)
+
+
+class UpRampVelocityField(VelocityPlanner):
     # Velocity field from https://ieeexplore.ieee.org/document/8779551
     def __init__(self, base_planner_params, ramp_planner_params, visualize=False):
         super().__init__(base_planner_params, ramp_planner_params, visualize=visualize)
 
     def setParams(self, rampPlannerParams):
         # ramp starts at x_s, ends at x_e, and has final height z_h
-        self.planar_len, self.alpha, self.delta, self.x_s, self.x_e, self.z_h = rampPlannerParams
-        
+        self.ramp_normal_gain, self.ramp_tangent_gain, self.delta, self.p1, self.p2 = rampPlannerParams
+        self.m, self.b = util.computeRampParams(self.p1, self.p2)
+
     def computeSymbolicV(self):
-        m, b = util.computeRampParams(self.x_s, self.x_e, self.z_h)
-        X_prime = sp.Matrix([self.q_sym[0], m*self.q_sym[0] + (b - self.delta)]) # X_prime is the point "into" the surface to facilitate interaction
+        X_prime = sp.Matrix([self.q_sym[0], self.m*self.q_sym[0] + (self.b - self.delta)]) # X_prime is the point "into" the surface to facilitate interaction
         n = (X_prime - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
-        m = self.z_h / (self.x_e - self.x_s)
-        t_hat = 1/np.sqrt(1 + m**2)*sp.Matrix([1, m])
-        self.symbolic_V = self.planar_len * (n + self.alpha*t_hat)
+        t_hat = 1/np.sqrt(1 + self.m**2)*sp.Matrix([1, self.m])
+        self.symbolic_V = self.ramp_normal_gain * (n + self.ramp_tangent_gain*t_hat)
+
+
+class DownRampVelocityField(UpRampVelocityField):
+    def __init__(self, base_planner_params, ramp_planner_params, visualize=False):
+        super().__init__(base_planner_params, ramp_planner_params, visualize=visualize)
+    
+    def setParams(self, rampPlannerParams):
+        self.ramp_normal_gain, self.ramp_tangent_gain, self.delta, self.p2, self.p3 = rampPlannerParams
+        self.m, self.b = util.computeRampParams(self.p2, self.p3)
+    
+    def computeSymbolicV(self):
+        X_prime = sp.Matrix([self.q_sym[0], self.m*self.q_sym[0] + (self.b - self.delta)]) # X_prime is the point "into" the surface to facilitate interaction
+        n = (X_prime - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
+        t_hat = 1/np.sqrt(1 + self.m**2)*sp.Matrix([1, self.m])
+        self.symbolic_V = self.ramp_normal_gain * (n + self.ramp_tangent_gain*t_hat)
 
 
 class SuperQuadraticField(VelocityPlanner):

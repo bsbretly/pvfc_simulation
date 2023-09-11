@@ -25,20 +25,26 @@ PlaneForceParams = namedtuple('PlaneForceParams', ['plane_k', 'plane_mu'], defau
 RampForceParams = namedtuple('RampForceParams', ['ramp_k', 'ramp_mu'], defaults=(ramp_k, ramp_mu))
 
 # Planner parameters
-planar_tangent, planar_normal = 1., 1.
-ramp_tangent, ramp_normal = 5., .5
+z_intercept = 0.
+horizontal_normal_gain, horizontal_tangent_gain = 1., 1.
+x_intercept = 2.
+vertical_normal_gain, vertical_tangent_gain = 2., 1.
+up_ramp_normal_gain, up_ramp_tangent_gain = 8., 1.
+down_ramp_normal_gain, down_ramp_tangent_gain = 1., 1.
+p1,p2,p3 = [0.5,0.], [1.,.25], [1.5,0]  # ramp x start, ramp x end, ramp z final height
 delta = 0.1 # distance "beyond" surface to facilitate interaction
-x_s, x_e, z_h = 0., 1., 1. # ramp x start, ramp x end, ramp z final height
-x_d, z_d = 0.5, 1.
+x_d, z_d = 0.5, 1. # desired point
 obstacle = False
 obs_x, obs_z = 1., 0.
 obs_m, obs_n, obs_L, obs_len = 5., 2., 1., 5.
 
 BaseQuadPlannerParams = namedtuple('BaseQuadPlannerParams', ['m', 'm_r', 'E_bar'], defaults=(m, m_r, E_bar))
 BaseAMPlannerParams = namedtuple('BaseAMPlannerParams', ['m', 'm_r', 'tool_length', 'E_bar'], defaults=(m, m_r, tool_length, E_bar))
-PointPlannerParams = namedtuple('PointPlannerParams', ['V_l', 'V_alpha', 'x_d', 'z_d'], defaults=(planar_tangent, planar_normal, x_d, z_d))
-PlanarPlannerParams = namedtuple('PlanarPlannerParams', ['V_l', 'V_alpha', 'delta'], defaults=(planar_tangent, planar_normal, delta))
-RampPlannerParams = namedtuple('PlanarPlannerParams', ['V_l', 'V_alpha', 'delta', 'x_s', 'x_e', 'z_h'], defaults=(ramp_tangent, ramp_normal, delta, x_s, x_e, z_h))
+PointPlannerParams = namedtuple('PointPlannerParams', ['V_l', 'V_horizontal_line_tangent_gain', 'x_d', 'z_d'], defaults=(horizontal_normal_gain, horizontal_tangent_gain, x_d, z_d))
+horizontal_line_planner_params = namedtuple('horizontal_line_planner_params', ['horizontal_normal_gain', 'horizontal_tangent_gain', 'z_intercept', 'delta'], defaults=(horizontal_normal_gain, horizontal_tangent_gain, z_intercept, delta))
+vertical_line_planner_params = namedtuple('vertical_line_planner_params', ['vertical_normal_gain', 'vertical_tangent_gain', 'x_intercept', 'delta'], defaults=(vertical_normal_gain, vertical_tangent_gain, x_intercept, delta))
+UpRampPlannerParams = namedtuple('horizontal_line_planner_params', ['ramp_normal_gain', 'ramp_tangent_gain', 'delta', 'p1', 'p2'], defaults=(up_ramp_normal_gain, up_ramp_tangent_gain, delta, p1, p2))
+DownRampPlannerParams = namedtuple('horizontal_line_planner_params', ['V_l', 'V_horizontal_line_tangent_gain', 'delta', 'p1', 'p2'], defaults=(down_ramp_normal_gain, down_ramp_tangent_gain, delta, p2, p3))
 SuperQuadraticParams = namedtuple('SuperQuadraticParams', ['obs_x', 'obs_z', 'obs_m', 'obs_n', 'obs_L', 'obs_len'], defaults=(obs_x, obs_z, obs_m, obs_n, obs_L, obs_len))
 
 # initial conditions

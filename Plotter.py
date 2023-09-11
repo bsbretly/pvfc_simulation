@@ -247,9 +247,6 @@ class VizVelocityField():
         for i in range(len(p_x[0])):
             for j in range(len(p_x[0])):
                 q = np.array([p_x[i, j], p_z[i, j]]).reshape(-1,1)
-                # if util.contactRamp(self.rampPlanner.x_s, self.rampPlanner.x_e, self.rampPlanner.z_h, q):
-                #     V = self.rampPlanner.plotStep(q)
-                # else: V = self.planarPlanner.plotStep(q)
                 V = self.planner.plotStep(q)
                 V_x[i,j] = V[0]
                 V_z[i,j] = V[1]

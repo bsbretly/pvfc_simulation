@@ -14,14 +14,14 @@ class Sim:
         ts = np.arange(0, sim_time, dt)
         for t in ts:
             # implement external force due to ramp interaction
-            if type(self.planner) is tuple:
+            if self.planner.__class__.__name__ == 'UpRampVelocityField':
                 q_T, _ = util.configToTask(q, q_dot, self.robot.dynamics.tool_length)
                 if util.contactPlane(self.planner[1].x_s, self.planner[1].x_e, q_T):
                     f_e = util.computePlaneForce(self.plane_k, self.plane_mu, q_T) 
                 elif util.contactRamp(self.planner[1].x_s, self.planner[1].x_e, self.planner[1].z_h, q_T):
                     f_e = util.computeRampForce(self.ramp_k, self.ramp_mu, self.planner[1].x_s, self.planner[1].x_e, self.planner[1].z_h, q_T)
                 else: f_e = np.zeros((2,1))
-            V, V_dot = path_planner.step(q, q_dot)
+            V, V_dot = self.planner.step(q, q_dot)
             u, u_attitude, F, q_r, q_r_dot = self.controller.step(q, q_dot, q_r, q_r_dot, V, V_dot, dt)
             q, q_dot = self.robot.step(q, q_dot, u, f_e, dt)
             f_es.append(f_e.copy())    

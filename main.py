@@ -1,5 +1,5 @@
 from Simulation import Sim
-from Planner import PointVelocityField, PlanarVelocityField, RampVelocityField, SuperQuadraticField
+from Planner import PointVelocityField, HorinzontalLineVelocityField, VerticalLineVelocityField, UpRampVelocityField, DownRampVelocityField, SuperQuadraticField
 from Controller import TranslationalPVFC, TaskPVFC
 from Robot import Quadrotor, AerialManipulator
 from Plotter import PlotSimResults, PlotAMSimResults, VizVelocityField, plt 
@@ -8,22 +8,20 @@ import params
 import numpy as np
 
 def runAMSim(sim_time=10, dt=0.01):
-    # allocate sim outputs
-    # us, Fs, f_es, qs, q_dots, q_Ts, q_T_dots, q_r_dots, V_Ts = [], [], [], [], [], [], [], [], []
     # define modules
-    planner = PlanarVelocityField(params.BaseAMPlannerParams(), params.PlanarPlannerParams(), visualize=True)
+    planner = UpRampVelocityField(params.BaseAMPlannerParams(), params.UpRampPlannerParams())
     planners = [
-                RampVelocityField(params.BaseAMPlannerParams(), params.RampPlannerParams(), visualize=True),
+                DownRampVelocityField(params.BaseAMPlannerParams(), params.DownRampPlannerParams()),
+                VerticalLineVelocityField(params.BaseAMPlannerParams(), params.vertical_line_planner_params())
                 ]
-    for added_planner in planners:
-        planner += added_planner
+    for plan in planners:
+        planner += plan
     if params.obstacle: planner += SuperQuadraticField(params.BasePlannerParams(), params.SuperQuadraticParams())
     controller = TaskPVFC(params.AMParams(), params.ControllerParams())
     robot = AerialManipulator(params.AMParams())
 
-    
     # run simulation
-    sim = Sim(planners, controller, robot, params.PlaneForceParams(), params.RampForceParams())
+    sim = Sim(planner, controller, robot, params.PlaneForceParams(), params.RampForceParams())
     ts, u, F, f_e, q, q_dot, q_r_dot = sim.run(params.AM_q, params.AM_q_dot, params.q_r, params.q_r_dot, params.F_e, sim_time=sim_time, dt=dt)
 
     # get task space variables
@@ -87,12 +85,13 @@ def runQuadSim(sim_time=10, dt=0.01):
     plt.show()
 
 def runVizVelocityField():
-    planner = PlanarVelocityField(params.BaseAMPlannerParams(), params.PlanarPlannerParams(), visualize=True)
+    planner = UpRampVelocityField(params.BaseAMPlannerParams(), params.UpRampPlannerParams(), visualize=True)
     planners = [
-                RampVelocityField(params.BaseAMPlannerParams(), params.RampPlannerParams(), visualize=True),
+                DownRampVelocityField(params.BaseAMPlannerParams(), params.DownRampPlannerParams(), visualize=True),
+                VerticalLineVelocityField(params.BaseAMPlannerParams(), params.vertical_line_planner_params(), visualize=True)
                 ]
-    for added_planner in planners:
-        planner += added_planner
+    for plan in planners:
+        planner += plan
     plotter = VizVelocityField(planner)
     # plot
     fig, ax = plt.subplots(1, 1, figsize=(16,9), sharex=True)
@@ -106,7 +105,7 @@ def runVizVelocityField():
 
 if __name__ == '__main__':
     # Choose which sim to run, sims are in 2D (x, z) plane
-    # runAMSim(sim_time=60)
+    runAMSim(sim_time=60)
     # runQuadSim(sim_time=90)
-    runVizVelocityField()
+    # runVizVelocityField()
     

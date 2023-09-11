@@ -1,8 +1,8 @@
 import numpy as np
 
-def computeRampParams(x_s, x_e, z_h):
-    m = z_h / (x_e - x_s)
-    b = -m * x_s
+def computeRampParams(p1, p2):
+    m = (p2[1] - p1[1]) / (p2[0] - p1[0])
+    b = p1[1] - m*p1[0]
     return m, b
 
 def computePlaneForce(k, mu, q_T):
