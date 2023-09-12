@@ -10,12 +10,6 @@ import numpy as np
 def runAMSim(sim_time=10, dt=0.01):
     # define modules
     planner = UpRampVelocityField(params.BaseAMPlannerParams(), params.UpRampPlannerParams())
-    planners = [
-                DownRampVelocityField(params.BaseAMPlannerParams(), params.DownRampPlannerParams()),
-                VerticalLineVelocityField(params.BaseAMPlannerParams(), params.vertical_line_planner_params())
-                ]
-    for plan in planners:
-        planner += plan
     if params.obstacle: planner += SuperQuadraticField(params.BasePlannerParams(), params.SuperQuadraticParams())
     controller = TaskPVFC(params.AMParams(), params.ControllerParams())
     robot = AerialManipulator(params.AMParams())
@@ -35,7 +29,7 @@ def runAMSim(sim_time=10, dt=0.01):
 
     # plot 1
     fig, ax = plt.subplots(1, 1, figsize=(16,9), sharex=True)
-    plotter = PlotAMSimResults(planners, controller, robot)
+    plotter = PlotAMSimResults(planner, controller, robot)
     plotter.plotRamp(fig, ax, q_Ts, color = 'black')
     plotter.plotRobot(fig, ax, ts, qs, us)
     plotter.plotVelocityField(fig, ax, qs)
@@ -80,12 +74,6 @@ def runQuadSim(sim_time=10, dt=0.01):
 
 def runVizVelocityField():
     planner = UpRampVelocityField(params.BaseAMPlannerParams(), params.UpRampPlannerParams(), visualize=True)
-    planners = [
-                DownRampVelocityField(params.BaseAMPlannerParams(), params.DownRampPlannerParams(), visualize=True),
-                VerticalLineVelocityField(params.BaseAMPlannerParams(), params.vertical_line_planner_params(), visualize=True)
-                ]
-    for plan in planners:
-        planner += plan
     plotter = VizVelocityField(planner)
     # plot
     fig, ax = plt.subplots(1, 1, figsize=(16,9), sharex=True)

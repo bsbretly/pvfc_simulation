@@ -110,25 +110,10 @@ class HorinzontalLineVelocityField(VelocityPlanner):
         self.horizontal_line_normal_gain, self.horizontal_line_tangent_gain, self.z_intercept, self.delta = horizontal_line_planner_params
         
     def computeSymbolicV(self): 
-        X_prime = sp.Matrix([self.q_sym[0], self.z_intercept - self.delta]) # X_prime is the point "into" the surface to facilitate interaction
-        n = (X_prime - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
+        Q = sp.Matrix([self.q_sym[0], self.z_intercept - self.delta]) # Q is the point "into" the surface to facilitate interaction
+        n = (Q - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
         t_hat = sp.Matrix([1, 0])
         self.symbolic_V = self.horizontal_line_normal_gain * (n + self.horizontal_line_tangent_gain*t_hat)
-
-
-class VerticalLineVelocityField(VelocityPlanner):
-    # Velocity field from https://ieeexplore.ieee.org/document/8779551
-    def __init__(self, base_planner_params, vertical_line_planner_params, visualize=False):
-        super().__init__(base_planner_params, vertical_line_planner_params, visualize=visualize)
-
-    def setParams(self, vertical_line_planner_params):
-        self.vertical_line_normal_gain, self.vertical_line_tangent_gain, self.x_intercept, self.delta = vertical_line_planner_params
-        
-    def computeSymbolicV(self): 
-        X_prime = sp.Matrix([self.x_intercept + self.delta, self.q_sym[1]]) # X_prime is the point "into" the surface to facilitate interaction
-        n = (X_prime - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
-        t_hat = sp.Matrix([0, -1])
-        self.symbolic_V = self.vertical_line_normal_gain * (n + self.vertical_line_tangent_gain*t_hat)
 
 
 class UpRampVelocityField(VelocityPlanner):
@@ -142,23 +127,8 @@ class UpRampVelocityField(VelocityPlanner):
         self.m, self.b = util.computeRampParams(self.p1, self.p2)
 
     def computeSymbolicV(self):
-        X_prime = sp.Matrix([self.q_sym[0], self.m*self.q_sym[0] + (self.b - self.delta)]) # X_prime is the point "into" the surface to facilitate interaction
-        n = (X_prime - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
-        t_hat = 1/np.sqrt(1 + self.m**2)*sp.Matrix([1, self.m])
-        self.symbolic_V = self.ramp_normal_gain * (n + self.ramp_tangent_gain*t_hat)
-
-
-class DownRampVelocityField(UpRampVelocityField):
-    def __init__(self, base_planner_params, ramp_planner_params, visualize=False):
-        super().__init__(base_planner_params, ramp_planner_params, visualize=visualize)
-    
-    def setParams(self, rampPlannerParams):
-        self.ramp_normal_gain, self.ramp_tangent_gain, self.delta, self.p2, self.p3 = rampPlannerParams
-        self.m, self.b = util.computeRampParams(self.p2, self.p3)
-    
-    def computeSymbolicV(self):
-        X_prime = sp.Matrix([self.q_sym[0], self.m*self.q_sym[0] + (self.b - self.delta)]) # X_prime is the point "into" the surface to facilitate interaction
-        n = (X_prime - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
+        Q = sp.Matrix([self.q_sym[0], self.m*self.q_sym[0] + (self.b - self.delta)]) # Q is the point "into" the surface to facilitate interaction
+        n = (Q - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
         t_hat = 1/np.sqrt(1 + self.m**2)*sp.Matrix([1, self.m])
         self.symbolic_V = self.ramp_normal_gain * (n + self.ramp_tangent_gain*t_hat)
 
