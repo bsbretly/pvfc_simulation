@@ -1,5 +1,5 @@
 from Simulation import Sim
-from Planner import PointVelocityField, HorinzontalLineVelocityField, VerticalLineVelocityField, UpRampVelocityField, DownRampVelocityField, SuperQuadraticField
+from Planner import PointVelocityField, HorinzontalLineVelocityField, UpRampVelocityField, SuperQuadraticField
 from Controller import TranslationalPVFC, TaskPVFC
 from Robot import Quadrotor, AerialManipulator
 from Plotter import PlotSimResults, PlotAMSimResults, VizVelocityField, plt 
@@ -7,15 +7,17 @@ import utilities as util
 import params
 import numpy as np
 
+import formatPlots as fp
+
 def runAMSim(sim_time=10, dt=0.01):
     # define modules
-    planner = UpRampVelocityField(params.BaseAMPlannerParams(), params.UpRampPlannerParams())
-    if params.obstacle: planner += SuperQuadraticField(params.BasePlannerParams(), params.SuperQuadraticParams())
-    controller = TaskPVFC(params.AMParams(), params.ControllerParams())
-    robot = AerialManipulator(params.AMParams())
+    planner = UpRampVelocityField(params.base_AM_planner_params(), params.base_up_ramp_planner_params(), params.up_ramp_planner_params())
+    if params.obstacle: planner += SuperQuadraticField(params.base_AM_planner_params(), params.super_quadratic_params())
+    controller = TaskPVFC(params.AM_params(), params.controller_params())
+    robot = AerialManipulator(params.AM_params())
 
     # run simulation
-    sim = Sim(planner, controller, robot, params.PlaneForceParams(), params.RampForceParams())
+    sim = Sim(planner, controller, robot, params.plane_force_params(), params.ramp_force_params())
     ts, u, F, f_e, q, q_dot, q_r_dot = sim.run(params.AM_q, params.AM_q_dot, params.q_r, params.q_r_dot, params.F_e, sim_time=sim_time, dt=dt)
 
     # get task space variables
@@ -30,9 +32,9 @@ def runAMSim(sim_time=10, dt=0.01):
     # plot 1
     fig, ax = plt.subplots(1, 1, figsize=(16,9), sharex=True)
     plotter = PlotAMSimResults(planner, controller, robot)
-    plotter.plotRamp(fig, ax, q_Ts, color = 'black')
-    plotter.plotRobot(fig, ax, ts, qs, us)
     plotter.plotVelocityField(fig, ax, qs)
+    plotter.plotRamp(fig, ax, q_Ts, color='black')
+    plotter.plotRobot(fig, ax, ts, qs, us, num=8)
     plotter.plotConfigState(fig, ax, qs, color='blue')
     plotter.plotTaskState(fig, ax, q_Ts, color='green')
 
@@ -73,21 +75,31 @@ def runQuadSim(sim_time=10, dt=0.01):
     plt.show()
 
 def runVizVelocityField():
-    planner = UpRampVelocityField(params.BaseAMPlannerParams(), params.UpRampPlannerParams(), visualize=True)
+    planner = UpRampVelocityField(params.base_AM_planner_params(), params.base_up_ramp_planner_params(), params.up_ramp_planner_params(), visualize=True)
     plotter = VizVelocityField(planner)
     # plot
-    fig, ax = plt.subplots(1, 1, figsize=(16,9), sharex=True)
-    # make a test grid of states
-    x = np.arange(0, 3, 0.1)
-    z = np.arange(0, 3, 0.1)
-    p_x, p_y = np.meshgrid(x, z, indexing='ij')
-    V_x, V_y = np.zeros((x.size,z.size)), np.zeros((x.size,z.size))
-    plotter.plotVelocityField(fig, ax, p_x, p_y, V_x, V_y)
+    fig, ax = plt.subplots(1, 1)#, figsize=(16,9), sharex=True)
+    # make test arrays of states
+    z_T = np.linspace(0, 1, 10)
+    x_T = np.linspace(0, 4, 20) 
+    plotter.plotRamp(fig, ax, x_T, color='black')
+    plotter.plotVelocityField(fig, ax, x_T, z_T)
+    
     plt.show()
 
 if __name__ == '__main__':
     # Choose which sim to run, sims are in 2D (x, z) plane
-    runAMSim(sim_time=60)
+    # runAMSim(sim_time=60)
     # runQuadSim(sim_time=90)
-    # runVizVelocityField()
+    runVizVelocityField()
+
+
+
+    # planner = UpRampVelocityField(params.base_AM_planner_params(), params.base_up_ramp_planner_params(), params.up_ramp_planner_params(), visualize=True)
+    # plotter = VizVelocityField(planner)
+    # fig, ax = plt.subplots(1, 1)#, figsize=(16,9), sharex=True)
     
+    # fp.setupPlotParams()
+    # # ax.plot(np.array([0, 1, 2]), np.array([0, 1, 2]), linestyle='-', color='black')
+    # plotter.plotTest(fig, ax, np.array([0, 1, 2]), np.array([0, 1, 2]))
+    # plt.show()

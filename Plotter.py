@@ -12,16 +12,9 @@ class PlotSimResults:
         fp.setupPlotParams()
 
     def plotRamp(self, fig, ax, q_Ts, color='black', linestyle='-'):
-        if not type(self.planner) is tuple: raise NotImplementedError("Must use plotRamp with a piece-wise planner.")
-        m,b = util.computeRampParams(self.planner[1].x_s, self.planner[1].x_e, self.planner[1].z_h)
-
-        x1 = np.linspace(0, self.planner[1].x_s, 100)  # Before the ramp
-        x2 = np.linspace(self.planner[1].x_s, self.planner[1].x_e, 100)  # On the ramp
-        x3 = np.linspace(self.planner[1].x_e, q_Ts[0,-1], 100)  # After the ramp
-
-        x = np.concatenate([x1, x2, x3])
-        y = np.concatenate([np.zeros_like(x1), m * x2 + b, np.zeros_like(x3)])
-        ax.plot(x, y, color, linestyle, linewidth=2)
+        m,b = util.computeRampParams(self.planner.p1, self.planner.p2)
+        x = np.linspace(0, q_Ts[0,-1], 100)
+        ax.plot(x, m*x + b, color=color, linestyle=linestyle, linewidth=2)
         return fig, ax
 
     def plotPositionTracking(self, fig, ax, x_d, z_d):
@@ -156,27 +149,21 @@ class PlotSimResults:
     def plotVelocityField(self, fig, ax, qs):
         min = np.amin(np.concatenate((qs[0,:], qs[1,:])))
         max = np.amax(np.concatenate((qs[0,:], qs[1,:])))
-        grid = np.arange(min, max, 0.1)
-        x_min = np.amin(qs[0,:])
+        array = np.arange(min, max, 0.1)
         x_max = np.amax(qs[0,:])
-        z_min = np.amin(qs[1,:])
         z_max = np.amax(qs[1,:])
-        x_grid = np.arange(x_min, x_max, 0.1)  
-        z_grid = np.arange(z_min, z_max, 0.1) 
+        x_array = np.linspace(0, x_max, 25)  
+        z_array = np.linspace(0, z_max, 25) 
          
-        p_x, p_z, V_x, V_z = self.createGrid(grid,grid)
-        for i in range(len(p_x[0])):
-            for j in range(len(p_x[0])):
+        p_x, p_z, V_x, V_z = self.createGrid(x_array,z_array)
+        for i in range(p_x.shape[0]):
+            for j in range(p_x.shape[1]):
                 q_T = np.array([p_x[i, j], p_z[i, j]]).reshape(-1,1)
-                if type(self.planner) is tuple:
-                    if util.contactRamp(self.planner[1].x_s, self.planner[1].x_e, self.planner[1].z_h, q_T):
-                        V = self.planner[1].plotStep(q_T)
-                    else: V = self.planner[0].plotStep(q_T)
-                else: V = self.planner.plotStep(q_T)
+                V = self.planner.plotStep(q_T)
                 V_x[i,j] = V[0]
                 V_z[i,j] = V[1]
         ax.quiver(p_x, p_z, V_x, V_z, color='k', pivot='middle', alpha=0.3)
-        ax.set_ylim(top=1.5)
+        # ax.set_ylim(top=1.5)
         return fig, ax
     
     def createGrid(self, x, y):
@@ -197,9 +184,8 @@ class PlotSimResults:
         ax.set_ylabel(r'$z\ [m]$')
         return fig, ax
     
-    def plotRobot(self, fig, ax, ts, qs, us, color = 'red', linestyle = '-'):
-        res = 8
-        idxs = np.rint(np.linspace(0, len(ts)-1, res)).astype(int)
+    def plotRobot(self, fig, ax, ts, qs, us, linestyle = '-', color='red', num=8):
+        idxs = np.rint(np.linspace(0, len(ts)-1, num)).astype(int)
         for i in idxs:
             self.display(fig, ax, qs[:,i], us[:,i])
         quad = mlines.Line2D([], [], color=color, marker='o', linestyle=linestyle, markersize=5, label='quadrotor')
@@ -214,25 +200,24 @@ class PlotAMSimResults(PlotSimResults):
     def plotTaskState(self, fig, ax, q_Ts, color='r', linestyle='--'):
         ax.plot(q_Ts[0,:], q_Ts[1,:], color=color, linestyle=linestyle)
     
-    def display(self, fig, ax, q_t, u_t):
-        x, z, theta, Beta = q_t[0], q_t[1], q_t[2], q_t[3]
+    def display(self, fig, ax, q, u):
+        x, z, theta, Beta = q[0], q[1], q[2], q[3]
         wing_span = self.robot.dynamics.tool_length
         # forward kinematics: configuration space to task space
-        q_T = np.array([self.robot.dynamics.tool_length*np.cos(Beta) + x, 
-            -self.robot.dynamics.tool_length*np.sin(Beta) + z])
+        q_T, _ = util.configToTask(q, np.zeros_like(q), self.robot.dynamics.tool_length)
         ax.plot(x, z, 'bo', label='quadrotor')
         ax.plot(q_T[0], q_T[1], 'go', label='tool tip')
         quad_x = [x-wing_span*np.cos(-theta), x+wing_span*np.cos(-theta)]
         quad_z = [z-wing_span*np.sin(-theta), z+wing_span*np.sin(-theta)]
         ax.plot(quad_x, quad_z, 'blue')
         ax.plot([x, q_T[0]], [z, q_T[1]], 'green')
-        ax.set_xlabel(r'$x\ [s]$')
+        ax.set_xlabel(r'$x\ [m]$')
         ax.set_ylabel(r'$z\ [m]$')
-        print('lambda: ', f'{u_t[0]:.2f}', 'theta: ', f'{theta*180/np.pi:.2f}', 'Beta: ', f'{Beta*180/np.pi:.2f}')
+        # print('lambda: ', f'{u_t[0]:.2f}', 'theta: ', f'{theta*180/np.pi:.2f}', 'Beta: ', f'{Beta*180/np.pi:.2f}')
         return fig, ax
-    def plotRobot(self, fig, ax, ts, qs, us):
-        res = 8
-        idxs = np.rint(np.linspace(0, len(ts)-1, res)).astype(int)
+    
+    def plotRobot(self, fig, ax, ts, qs, us, num=8):
+        idxs = np.rint(np.linspace(0, len(ts)-1, num)).astype(int)
         for i in idxs:
             self.display(fig, ax, qs[:,i], us[:,i])
         quad = mlines.Line2D([], [], color='blue', marker='o', linestyle='-', markersize=5, label='quadrotor')
@@ -240,16 +225,29 @@ class PlotAMSimResults(PlotSimResults):
         ax.legend(handles=[quad, tool])
 
 
-class VizVelocityField():
+class VizVelocityField(PlotSimResults):
     def __init__(self, planner):
         self.planner = planner
-    def plotVelocityField(self, fig, ax, p_x, p_z, V_x, V_z):
-        for i in range(len(p_x[0])):
-            for j in range(len(p_x[0])):
-                q = np.array([p_x[i, j], p_z[i, j]]).reshape(-1,1)
-                V = self.planner.plotStep(q)
+        fp.setupPlotParams()
+
+    def plotRamp(self, fig, ax, x_T, color='black', linestyle='-'):
+        m,b = util.computeRampParams(self.planner.p1, self.planner.p2)    
+        ax.plot(x_T, m*x_T + b, color=color, linestyle=linestyle, linewidth=2)
+        return fig, ax
+
+    def plotVelocityField(self, fig, ax, x_T, z_T):
+        p_x, p_z, V_x, V_z = self.createGrid(x_T,z_T)
+        for i in range(p_x.shape[0]):
+            for j in range(p_x.shape[1]):
+                q_T = np.array([p_x[i, j], p_z[i, j]]).reshape(-1,1)
+                V = self.planner.plotStep(q_T)
                 V_x[i,j] = V[0]
                 V_z[i,j] = V[1]
         ax.quiver(p_x, p_z, V_x, V_z, color='k', pivot='middle', alpha=0.3)
+        ax.set_xlabel(r'$x\ [s]$')
+        ax.set_ylabel(r'$z\ [m]$')
         # ax.set_ylim(top=1.5)
         return fig, ax
+    
+    def plotTest(self, fig, ax, x_T, y_T):
+        ax.plot(x_T, y_T, color='black', linestyle='-')

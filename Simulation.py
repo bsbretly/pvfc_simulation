@@ -2,11 +2,10 @@ import numpy as np
 import utilities as util
 
 class Sim:
-    def __init__(self, planner, controller, robot, plane_force_params, ramp_force_params):
+    def __init__(self, planner, controller, robot, ramp_force_params):
         self.planner = planner
         self.controller = controller
         self.robot = robot
-        self.plane_k, self.plane_mu = plane_force_params
         self.ramp_k, self.ramp_mu = ramp_force_params 
         
     def run(self, q, q_dot, q_r, q_r_dot, f_e, sim_time=10, dt=0.001):

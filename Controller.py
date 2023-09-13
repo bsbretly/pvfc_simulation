@@ -5,8 +5,8 @@ from Dynamics import QuadrotorTranslationalDynamics, AerialManipulatorTaskDynami
 
 class PVFC:
     def __init__(self, robot_parameters, controller_parameters):
-        if type(robot_parameters).__name__ == 'QuadrotorParams': self.dynamics = QuadrotorTranslationalDynamics(robot_parameters)
-        elif type(robot_parameters).__name__ == 'AMParams': self.dynamics = AerialManipulatorTaskDynamics(robot_parameters)
+        if type(robot_parameters).__name__ == 'quadrotor_params': self.dynamics = QuadrotorTranslationalDynamics(robot_parameters)
+        elif type(robot_parameters).__name__ == 'AM_params': self.dynamics = AerialManipulatorTaskDynamics(robot_parameters)
         else: raise NotImplementedError("Robot parameters not implemented for the controller.")
         self.m_r, self.E_bar, self.gamma, self.theta_K_p, self.theta_K_d = controller_parameters
 

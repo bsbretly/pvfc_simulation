@@ -8,15 +8,15 @@ RAD_TO_DEG = 1/DEG_TO_RAD
 class VelocityPlanner: 
     def __init__(self, base_planner_params, *args, visualize=False):
         self.visualize = visualize
-        if type(base_planner_params).__name__ == 'BaseQuadPlannerParams': 
+        if type(base_planner_params).__name__ == 'base_quad_planner_params': 
             self.task_space = False
             self.m, self.m_r, self.E_bar = base_planner_params
-        elif type(base_planner_params).__name__ == 'BaseAMPlannerParams': 
+        elif type(base_planner_params).__name__ == 'base_AM_planner_params': 
             self.task_space = True
             self.m, self.m_r, self.tool_length, self.E_bar = base_planner_params
         else: raise NotImplementedError("Planner parameters not implemented.")
         
-        self.q_sym = sp.symbols('x z')
+        self.q_sym = sp.Matrix([sp.symbols('x'), sp.symbols('z')])
         self.setParams(*args)
         self.computeSymbolicV()
         if not self.visualize: self.augmentV()
@@ -64,12 +64,12 @@ class VelocityPlanner:
 
     def augmentV(self):
         reservoir_field = sp.sqrt((2. / self.m_r) * (sp.Matrix([self.E_bar]) - (0.5 * self.symbolic_V.T@self.symbolic_V*self.m)))
-        self.symbolic_V.row_insert(3, reservoir_field)
+        self.symbolic_V = self.symbolic_V.row_insert(3, reservoir_field)
 
     def lambdifyV(self):
-        self.velocity_field = sp.lambdify(self.q_sym, self.symbolic_V, modules='numpy')
+        self.velocity_field = sp.lambdify([self.q_sym[0], self.q_sym[1]], self.symbolic_V, modules='numpy')
         jacobian = self.symbolic_V.jacobian(self.q_sym)
-        self.velocity_field_jacobian = sp.lambdify(self.q_sym, jacobian, modules='numpy')
+        self.velocity_field_jacobian = sp.lambdify([self.q_sym[0], self.q_sym[1]], jacobian, modules='numpy')
 
     def __iadd__(self, other):
         self.symbolic_V = self.symbolic_V + other.symbolic_V
@@ -85,52 +85,62 @@ class VelocityPlanner:
         ''' this method has to initialize the parameters of the subclass'''
         raise NotImplementedError("Must override setParams")
     
-    
-class PointVelocityField(VelocityPlanner):
-    # Velocity field from https://ieeexplore.ieee.org/document/8779551
-    def __init__(self, base_planner_params, point_planner_params, visualize=False):
-        super().__init__(base_planner_params, point_planner_params, visualize=visualize)
 
-    def setParams(self, point_planner_params):
-        self.point_line_normal_gain, self.point_line_tangent_gain, self.x_d, self.z_d = point_planner_params
+class ContourVelocityField(VelocityPlanner):
+    def __init__(self, base_planner_params, *args, visualize=False):
+        super().__init__(base_planner_params, *args, visualize=visualize)
+    
+    def setParams(self, base_contour_planner_params):
+        self.normal_gain, self.tangent_gain = base_contour_planner_params
+    
+
+class PointVelocityField(ContourVelocityField):
+    # Velocity field from https://ieeexplore.ieee.org/document/8779551
+    def __init__(self, base_planner_params, base_point_planner_params, point_planner_params, visualize=False):
+        super().__init__(base_planner_params, base_point_planner_params, point_planner_params, visualize=visualize)
+
+    def setParams(self, *args):
+        super().setParams(args[0])
+        self.x_d, self.z_d = args[1]
         
     def computeSymbolicV(self): 
-        Q = sp.Matrix([self.x_d, self.z_d])
-        n = (Q - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
+        Q_sym = sp.Matrix([self.x_d, self.z_d])
+        n_hat = (Q_sym - self.q_sym) / (Q_sym - self.q_sym).norm()
         t_hat = sp.Matrix([0, 0])
-        self.symbolic_V = self.point_line_normal_gain * (n + self.point_line_tangent_gain*t_hat)
+        self.symbolic_V = self.normal_gain*((Q_sym - self.q_sym).norm()*n_hat + self.tangent_gain*t_hat)
 
 
-class HorinzontalLineVelocityField(VelocityPlanner):
+class HorinzontalLineVelocityField(ContourVelocityField):
     # Velocity field from https://ieeexplore.ieee.org/document/8779551
     def __init__(self, base_planner_params, horizontal_line_planner_params, visualize=False):
         super().__init__(base_planner_params, horizontal_line_planner_params, visualize=visualize)
 
-    def setParams(self, horizontal_line_planner_params):
-        self.horizontal_line_normal_gain, self.horizontal_line_tangent_gain, self.z_intercept, self.delta = horizontal_line_planner_params
+    def setParams(self, *args):
+        super().setParams(args[0])
+        self.delta, self.z_intercept = args[1]
         
     def computeSymbolicV(self): 
-        Q = sp.Matrix([self.q_sym[0], self.z_intercept - self.delta]) # Q is the point "into" the surface to facilitate interaction
-        n = (Q - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
+        Q_sym = sp.Matrix([self.q_sym[0], self.z_intercept - self.delta]) # Q is the point offset by delta "into" the surface
+        n_hat = (Q_sym - self.q_sym) / (Q_sym - self.q_sym).norm()
         t_hat = sp.Matrix([1, 0])
-        self.symbolic_V = self.horizontal_line_normal_gain * (n + self.horizontal_line_tangent_gain*t_hat)
+        self.symbolic_V = self.normal_gain*((Q_sym - self.q_sym).norm()*n_hat + self.tangent_gain*t_hat)
 
 
-class UpRampVelocityField(VelocityPlanner):
+class UpRampVelocityField(ContourVelocityField):
     # Velocity field from https://ieeexplore.ieee.org/document/8779551
-    def __init__(self, base_planner_params, ramp_planner_params, visualize=False):
-        super().__init__(base_planner_params, ramp_planner_params, visualize=visualize)
-
-    def setParams(self, rampPlannerParams):
-        # ramp starts at x_s, ends at x_e, and has final height z_h
-        self.ramp_normal_gain, self.ramp_tangent_gain, self.delta, self.p1, self.p2 = rampPlannerParams
+    def __init__(self, base_planner_params, *args, visualize=False):
+        super().__init__(base_planner_params, *args, visualize=visualize)
+        
+    def setParams(self, *args):
+        super().setParams(args[0])
+        self.delta, self.p1, self.p2 = args[1]
         self.m, self.b = util.computeRampParams(self.p1, self.p2)
 
     def computeSymbolicV(self):
-        Q = sp.Matrix([self.q_sym[0], self.m*self.q_sym[0] + (self.b - self.delta)]) # Q is the point "into" the surface to facilitate interaction
-        n = (Q - sp.Matrix([self.q_sym[0] , self.q_sym[1]]))
-        t_hat = 1/np.sqrt(1 + self.m**2)*sp.Matrix([1, self.m])
-        self.symbolic_V = self.ramp_normal_gain * (n + self.ramp_tangent_gain*t_hat)
+        Q_sym = sp.Matrix([self.q_sym[0], self.m*self.q_sym[0] + (self.b - self.delta)]) # Q is the point offset by delta "into" the surface
+        n_hat = (Q_sym - self.q_sym) / (Q_sym - self.q_sym).norm()
+        t_hat = sp.Matrix([1, self.m]) / (sp.Matrix([1, self.m])).norm()
+        self.symbolic_V = self.normal_gain*(self.tangent_gain*t_hat + (Q_sym - self.q_sym).norm()*n_hat)
 
 
 class SuperQuadraticField(VelocityPlanner):
