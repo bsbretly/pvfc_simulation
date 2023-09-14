@@ -14,8 +14,8 @@ class Sim:
         for t in ts:
             # implement external force due to ramp interaction
             if self.planner.__class__.__name__ == 'UpRampVelocityField':
-                q_T, _ = util.configToTask(q, q_dot, self.robot.dynamics.tool_length)
-                f_e = util.computeRampForce(self.ramp_k, self.ramp_mu, self.planner.p1, self.planner.p2, q_T)
+                q_T, q_dot_T = util.configToTask(q, q_dot, self.robot.dynamics.tool_length)
+                f_e = util.computeRampForce(self.ramp_k, self.ramp_mu, self.planner.p1, self.planner.p2, q_T, q_dot_T)
             V, V_dot = self.planner.step(q, q_dot)
             u, u_attitude, F, q_r, q_r_dot = self.controller.step(q, q_dot, q_r, q_r_dot, V, V_dot, dt)
             q, q_dot = self.robot.step(q, q_dot, u, f_e, dt)

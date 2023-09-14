@@ -23,7 +23,7 @@ def contactRamp(p1, p2, q_T):
     z_ramp = m*x_T + b
     return z_T <= z_ramp
 
-def computeRampForce(k, mu, p1, p2, q_T): 
+def computeRampForce(k, mu, p1, p2, q_T, q_dot_T): 
     '''
     input: 
         ramp stiffness, coefficient of kinetic friction, points and end-effector posiion - k, mu, p1, p2, q_T
@@ -35,6 +35,7 @@ def computeRampForce(k, mu, p1, p2, q_T):
         Delta = np.abs(-m*q_T[0,0] + q_T[1,0] - b) / np.sqrt(m**2 + 1) # distance into the ramp
         n_hat = np.array([[-m], [1.]]) / np.sqrt(1 + m**2)
         force_scaler = k*Delta
+        # normal_force = force_scaler*n_hat + b*q_dot_T*n_hat # TODO: implement damping
         normal_force = force_scaler*n_hat
         t_hat = np.array([[1.], [m]]) / np.sqrt(1 + m**2)
         tangent_force = mu*force_scaler*t_hat
