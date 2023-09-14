@@ -16,6 +16,7 @@ class Robot:
         q += q_dot*dt 
         return q, q_dot
 
+
 class Quadrotor(Robot):
     def __init__(self, robot_params):
         super().__init__(robot_params)

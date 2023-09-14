@@ -149,12 +149,11 @@ class PlotSimResults:
     def plotVelocityField(self, fig, ax, qs):
         min = np.amin(np.concatenate((qs[0,:], qs[1,:])))
         max = np.amax(np.concatenate((qs[0,:], qs[1,:])))
-        array = np.arange(min, max, 0.1)
+        array = np.linspace(0, max, 25)
         x_max = np.amax(qs[0,:])
         z_max = np.amax(qs[1,:])
-        x_array = np.linspace(0, x_max, 25)  
-        z_array = np.linspace(0, z_max, 25) 
-         
+        x_array = np.linspace(0, x_max, 10)  
+        z_array = np.linspace(0, 1, 10)
         p_x, p_z, V_x, V_z = self.createGrid(x_array,z_array)
         for i in range(p_x.shape[0]):
             for j in range(p_x.shape[1]):
@@ -162,8 +161,9 @@ class PlotSimResults:
                 V = self.planner.plotStep(q_T)
                 V_x[i,j] = V[0]
                 V_z[i,j] = V[1]
-        ax.quiver(p_x, p_z, V_x, V_z, color='k', pivot='middle', alpha=0.3)
-        # ax.set_ylim(top=1.5)
+        ax.quiver(p_x, p_z, V_x, V_z, color='k', pivot='middle', alpha=0.3, angles='xy', scale_units='xy', scale=50, width=0.0005*x_max)#headwidth=1, headlength=3, headaxislength=2.5)
+        # ax.set_aspect('equal', 'box')
+        # ax.set_ylim(top=0.5)
         return fig, ax
     
     def createGrid(self, x, y):
@@ -202,7 +202,7 @@ class PlotAMSimResults(PlotSimResults):
     
     def display(self, fig, ax, q, u):
         x, z, theta, Beta = q[0], q[1], q[2], q[3]
-        wing_span = self.robot.dynamics.tool_length
+        wing_span = self.robot.dynamics.tool_length*2
         # forward kinematics: configuration space to task space
         q_T, _ = util.configToTask(q, np.zeros_like(q), self.robot.dynamics.tool_length)
         ax.plot(x, z, 'bo', label='quadrotor')
@@ -219,7 +219,7 @@ class PlotAMSimResults(PlotSimResults):
     def plotRobot(self, fig, ax, ts, qs, us, num=8):
         idxs = np.rint(np.linspace(0, len(ts)-1, num)).astype(int)
         for i in idxs:
-            self.display(fig, ax, qs[:,i], us[:,i])
+            self.display(fig, ax, qs[:,i:i+1], us[:,i:i+1])
         quad = mlines.Line2D([], [], color='blue', marker='o', linestyle='-', markersize=5, label='quadrotor')
         tool = mlines.Line2D([], [], color='green', marker='o', linestyle='None', markersize=5, label='tool tip')
         ax.legend(handles=[quad, tool])

@@ -1,17 +1,35 @@
 import numpy as np
 
 def computeRampParams(p1, p2):
+    '''
+    input: 
+        2 (x,z) points on a line - p1, p2
+    output: 
+        slope and z-intercept of line going through p1, p2 - m, b
+    '''
     m = (p2[1] - p1[1]) / (p2[0] - p1[0])
     b = p1[1] - m*p1[0]
     return m, b
 
 def contactRamp(p1, p2, q_T):
+    '''
+    input: 
+        2 (x,z) points on a line and end-effector poistion - p1, p2, q_T
+    output: 
+        True if end-effector is in contact with the ramp, else False - bool
+    '''
     x_T, z_T = q_T[0,0], q_T[1,0]
     m,b = computeRampParams(p1, p2)
     z_ramp = m*x_T + b
     return z_T <= z_ramp
 
 def computeRampForce(k, mu, p1, p2, q_T): 
+    '''
+    input: 
+        ramp stiffness, coefficient of kinetic friction, points and end-effector posiion - k, mu, p1, p2, q_T
+    output: 
+        (x,z) force vector - F
+    '''
     if contactRamp(p1, p2, q_T): 
         m, b = computeRampParams(p1, p2)
         Delta = np.abs(-m*q_T[0,0] + q_T[1,0] - b) / np.sqrt(m**2 + 1) # distance into the ramp

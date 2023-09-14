@@ -17,7 +17,7 @@ def runAMSim(sim_time=10, dt=0.01):
     robot = AerialManipulator(params.AM_params())
 
     # run simulation
-    sim = Sim(planner, controller, robot, params.plane_force_params(), params.ramp_force_params())
+    sim = Sim(planner, controller, robot, params.ramp_force_params())
     ts, u, F, f_e, q, q_dot, q_r_dot = sim.run(params.AM_q, params.AM_q_dot, params.q_r, params.q_r_dot, params.F_e, sim_time=sim_time, dt=dt)
 
     # get task space variables
@@ -38,13 +38,13 @@ def runAMSim(sim_time=10, dt=0.01):
     plotter.plotConfigState(fig, ax, qs, color='blue')
     plotter.plotTaskState(fig, ax, q_Ts, color='green')
 
-    # plot 2
-    fig, ax = plt.subplots(2, 1, figsize=(16,9), sharex=True)
-    plotter.plotPowerAnnihilation(fig, ax, ts, Fs, q_T_dots, q_r_dots)
+    # # plot 2
+    # fig, ax = plt.subplots(2, 1, figsize=(16,9), sharex=True)
+    # plotter.plotPowerAnnihilation(fig, ax, ts, Fs, q_T_dots, q_r_dots)
 
-    # plot 3
-    fig, ax = plt.subplots(3, 1, figsize=(16,9), sharex=True)
-    plotter.plotPassivity(fig, ax, ts, q_T_dots, q_r_dots, f_es)
+    # # plot 3
+    # fig, ax = plt.subplots(3, 1, figsize=(16,9), sharex=True)
+    # plotter.plotPassivity(fig, ax, ts, q_T_dots, q_r_dots, f_es)
 
     plt.show()
 
@@ -89,17 +89,6 @@ def runVizVelocityField():
 
 if __name__ == '__main__':
     # Choose which sim to run, sims are in 2D (x, z) plane
-    # runAMSim(sim_time=60)
+    runAMSim(sim_time=60)
     # runQuadSim(sim_time=90)
-    runVizVelocityField()
-
-
-
-    # planner = UpRampVelocityField(params.base_AM_planner_params(), params.base_up_ramp_planner_params(), params.up_ramp_planner_params(), visualize=True)
-    # plotter = VizVelocityField(planner)
-    # fig, ax = plt.subplots(1, 1)#, figsize=(16,9), sharex=True)
-    
-    # fp.setupPlotParams()
-    # # ax.plot(np.array([0, 1, 2]), np.array([0, 1, 2]), linestyle='-', color='black')
-    # plotter.plotTest(fig, ax, np.array([0, 1, 2]), np.array([0, 1, 2]))
-    # plt.show()
+    # runVizVelocityField()
