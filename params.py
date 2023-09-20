@@ -12,6 +12,7 @@ AM_params = namedtuple('AM_params', ['m', 'm_t', 'I', 'I_t', 'tool_length'], def
 E_bar = 150
 m_r, gamma = .1, .1
 theta_K_p, theta_K_d = 200., 20.
+
 controller_params = namedtuple('controller_params', ['m_r', 'E_bar', 'gamma', 'theta_K_p', 'theta_K_d'], defaults=(m_r, E_bar, gamma, theta_K_p, theta_K_d))
 
 # External force

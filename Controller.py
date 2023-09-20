@@ -2,6 +2,45 @@ import numpy as np
 import utilities as util
 from Dynamics import QuadrotorTranslationalDynamics, AerialManipulatorTaskDynamics
 
+class BaseControl:
+    def __init__(attitudeControlParams):
+        
+    def computAttitudeControl(self, q, q_dot, u_attitude):
+        thrust, theta_d = u_attitude[0], u_attitude[1]
+        tau_theta_d = self.dynamics.I*(self.theta_K_p*(theta_d - q[2,0]) + self.theta_K_d*(0. - q_dot[2,0]))
+        return np.array([[thrust, tau_theta_d]]).T
+    
+class PDControl(BaseControl):
+            
+    def __init__(self, PDParams, attitudeControlParams, trajectoryParams):
+        super().__init__(attitudeControlParams)
+
+        self.Kp, self.Kd = PDParams
+        self.Ki = 1.
+        if type(trajectoryParams).__name__ == 'CircularTrajectoryParams':
+            self.planner = CircularTrajectory(trajectoryParams)
+        elif type(trajectoryParams).__name__ == 'PolynomialTrajectoryParams':
+            self.planner = PolynomialTrajectory(trajectoryParams)
+        else:
+            raise NotImplementedError('planner type not implemented')
+
+    # def definePlanner(self, planner):
+    #     self.planner = planner
+
+    def computeCommand(self, t, M, G, q, qdot, qddot):
+
+        # desired state
+        q_d, qdot_d, qddot_d = self.planner.computeDesiredState(t)
+
+
+        Alpha = M @ qddot_d - G - self.Kp*(q[:3] - q_d) - self.Kd*(qdot[:3] - qdot_d)
+        # Alpha = M @ qddot_d - self.Kp*(q[:3] - q_d) - self.Kd*(qdot[:3] - qdot_d)
+        # Alpha = self.Kp*(q[:3] - q_d) + self.Kd*(qdot[:3] - qdot_d)
+        # Alpha = self.Kp * (qdot_d - qdot[:3]) + self.Ki * (q_d - q[:3]) + self.Kd * (qddot_d - qddot[:3])
+
+        # print("norm u = ", Alpha.T@Alpha)
+        return self.attitudeControl.computeCommand(q, qdot, Alpha)
+    
 
 class PVFC:
     def __init__(self, robot_parameters, controller_parameters):
@@ -57,8 +96,8 @@ class TranslationalPVFC(PVFC):
 
     def computAttitudeControl(self, q, q_dot, u_attitude):
         thrust, theta_d = u_attitude[0], u_attitude[1]
-        tau_theta = self.dynamics.I*(self.theta_K_p*(theta_d - q[2,0]) + self.theta_K_d*(0. - q_dot[2,0]))
-        return np.array([[thrust, tau_theta]]).T
+        tau_theta_d = self.dynamics.I*(self.theta_K_p*(theta_d - q[2,0]) + self.theta_K_d*(0. - q_dot[2,0]))
+        return np.array([[thrust, tau_theta_d]]).T
 
     def step(self, q, q_dot, q_r, q_r_dot, V_bar, V_bar_dot, dt):
         M_bar, C_bar = self.computeAndAugmentDynamics(q, q_dot)
