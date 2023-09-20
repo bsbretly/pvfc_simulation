@@ -1,19 +1,21 @@
 from Simulation import Sim
 from Planner import PointVelocityField, HorinzontalLineVelocityField, UpRampVelocityField, SuperQuadraticField
-from Controller import TranslationalPVFC, TaskPVFC
+from Controller import TranslationalPVFC, TaskPVFC, PDControl
 from Robot import Quadrotor, AerialManipulator
 from Plotter import PlotSimResults, PlotAMSimResults, VizVelocityField, plt 
 import utilities as util
 import params
 import numpy as np
 
-import formatPlots as fp
-
-def runAMSim(sim_time=10, dt=0.01):
+def runAMSim(control='TaskPVFC', sim_time=10, dt=0.01):
     # define modules
     planner = UpRampVelocityField(params.base_AM_planner_params(), params.base_up_ramp_planner_params(), params.up_ramp_planner_params())
     if params.obstacle: planner += SuperQuadraticField(params.base_AM_planner_params(), params.super_quadratic_params())
-    controller = TaskPVFC(params.AM_params(), params.attitude_control_params(), params.pvfc_params())
+
+    if control=='TaskPVFC': controller = TaskPVFC(params.AM_params(), params.attitude_control_params(), params.pvfc_params())
+    elif control=='PDControl': controller = PDControl(params.AM_params(), params.attitude_control_params(), params.pd_params())
+    else: raise ValueError('Invalid control type')
+
     robot = AerialManipulator(params.AM_params())
 
     # run simulation
@@ -89,6 +91,6 @@ def runVizVelocityField():
 
 if __name__ == '__main__':
     # Choose which sim to run, sims are in 2D (x, z) plane
-    runAMSim(sim_time=60)
+    runAMSim(control='TaskPVFC', sim_time=60)  # control = 'TaskPVFC' or 'PDControl'
     # runQuadSim(sim_time=90)
     # runVizVelocityField()

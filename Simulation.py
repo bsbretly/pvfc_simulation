@@ -22,3 +22,4 @@ class Sim:
             f_es.append(f_e.copy())    
             us.append(u.copy()), qs.append(q.copy()), q_dots.append(q_dot.copy()), q_r_dots.append(q_r_dot.copy()), Fs.append(F.copy())
         return ts, us, Fs, f_es, qs, q_dots, q_r_dots
+    
