@@ -11,9 +11,11 @@ AM_params = namedtuple('AM_params', ['m', 'm_t', 'I', 'I_t', 'tool_length'], def
 # Control parameters
 E_bar = 150
 m_r, gamma = .1, .1
-theta_K_p, theta_K_d = 200., 20.
-
-controller_params = namedtuple('controller_params', ['m_r', 'E_bar', 'gamma', 'theta_K_p', 'theta_K_d'], defaults=(m_r, E_bar, gamma, theta_K_p, theta_K_d))
+theta_K_p, theta_K_d = 200., 20.  # attitude controller gains
+K_p, K_d = 1., .4  # PD contrller gains
+attitude_control_params = namedtuple('attitude_control_params', ['theta_K_p', 'theta_K_d'], defaults=(theta_K_p, theta_K_d))
+pvfc_params = namedtuple('pvfc_params', ['m_r', 'E_bar', 'gamma'], defaults=(m_r, E_bar, gamma))
+pd_params = namedtuple('pd_params', ['K_p', 'K_d'], defaults=(K_p, K_d))
 
 # External force
 F_e = np.array([[-0.1], [0.2]]) # precomputed external force
