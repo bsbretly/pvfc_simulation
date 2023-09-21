@@ -54,5 +54,5 @@ super_quadratic_params = namedtuple('super_quadratic_params', ['obs_x', 'obs_z',
 
 # initial conditions
 AM_q, AM_q_dot = np.array([[0., .2, 0.*DEG_TO_RAD, 90.*DEG_TO_RAD]]).T, np.array([[0.1 , -0.01, 0., 0.]]).T # q = [x, z, theta, Beta]^T
-Quad_q, Quad_q_dot = np.array([[0., 0., 0.*DEG_TO_RAD]]).T, np.array([[0. , 0.05, 0.]]).T # q = [x, z, theta]^T
+quad_q, quad_q_dot = np.array([[0., 0., 0.*DEG_TO_RAD]]).T, np.array([[0. , 0.05, 0.]]).T # q = [x, z, theta]^T
 q_r, q_r_dot = 0., 0.

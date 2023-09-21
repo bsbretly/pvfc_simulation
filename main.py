@@ -1,18 +1,18 @@
 from Simulation import Sim
 from Planner import PointVelocityField, HorinzontalLineVelocityField, UpRampVelocityField, SuperQuadraticField
-from Controller import TranslationalPVFC, TaskPVFC, PDControl
+from Controller import PVFC, PDControl
 from Robot import Quadrotor, AerialManipulator
 from Plotter import PlotSimResults, PlotAMSimResults, VizVelocityField, plt 
 import utilities as util
 import params
 import numpy as np
 
-def runAMSim(control='TaskPVFC', sim_time=10, dt=0.01):
+def runAMSim(control='PVFC', sim_time=10, dt=0.01):
     # define modules
     planner = UpRampVelocityField(params.base_AM_planner_params(), params.base_up_ramp_planner_params(), params.up_ramp_planner_params())
     if params.obstacle: planner += SuperQuadraticField(params.base_AM_planner_params(), params.super_quadratic_params())
 
-    if control=='TaskPVFC': controller = TaskPVFC(params.AM_params(), params.attitude_control_params(), params.pvfc_params())
+    if control=='PVFC': controller = PVFC(params.AM_params(), params.attitude_control_params(), params.pvfc_params())
     elif control=='PDControl': controller = PDControl(params.AM_params(), params.attitude_control_params(), params.pd_params())
     else: raise ValueError('Invalid control type')
 
@@ -51,29 +51,28 @@ def runAMSim(control='TaskPVFC', sim_time=10, dt=0.01):
     plt.show()
 
 def runQuadSim(sim_time=10, dt=0.01):
-    # allocate sim outputs
-    us, Fs, f_es, qs, q_dots, q_r_dots, V_Ts = [], [], [], [], [], [], []
     # define modules
-    planner = PointVelocityField(params.BaseQuadPlannerParams(), params.PointPlannerParams())
-    if params.obstacle: planner += SuperQuadraticField(params.BasePlannerParams(), params.SuperQuadraticParams())
-    controller = TranslationalPVFC(params.QuadrotorParams(), params.ControllerParams())
-    robot = Quadrotor(params.QuadrotorParams())
+    planner = PointVelocityField(params.base_quad_planner_params(), params.base_point_planner_params(), params.point_planner_params())
+    if params.obstacle: planner += SuperQuadraticField(params.base_quad_planner_params(), params.super_quadratic_params())
+    controller = PVFC(params.quadrotor_params(), params.attitude_control_params(), params.pvfc_params())
+    robot = Quadrotor(params.quadrotor_params())
     
     # run simulation
     sim = Sim(planner, controller, robot)
-    ts, u, F, f_e, q, q_dot, q_r_dot = sim.run(params.Quad_q, params.Quad_q_dot, params.q_r, params.q_r_dot, params.F_e, sim_time=sim_time, dt=dt)
+    ts, u, F, f_e, q, q_dot, q_r_dot = sim.run(params.quad_q, params.quad_q_dot, params.q_r, params.q_r_dot, params.F_e, sim_time=sim_time, dt=dt)
 
+    # get desired velocity field
     V, V_dot = zip(*[sim.planner.step(q_i, q_dot_i) for q_i, q_dot_i in zip(np.concatenate(q,axis=1).T[:,:,None], np.concatenate(q_dot,axis=1).T[:,:,None])])
 
     # concatenate data
-    us.append(np.concatenate(u,axis=1)), Fs.append(np.concatenate(F,axis=1)), f_es.append(np.concatenate(f_e,axis=1)), qs.append(np.concatenate(q,axis=1)), q_dots.append(np.concatenate(q_dot,axis=1)), q_r_dots.append(q_r_dot), V_Ts.append(np.concatenate(V,axis=1))
+    us, Fs, f_es, qs, q_dots, q_r_dots, Vs =  np.concatenate(u,axis=1), np.concatenate(F,axis=1), np.concatenate(f_e,axis=1), np.concatenate(q,axis=1), np.concatenate(q_dot,axis=1), (q_r_dot), np.concatenate(V,axis=1)
 
     # plot
     fig, ax = plt.subplots(1, 1, figsize=(16,9), sharex=True)
-    plotter = PlotSimResults(planner, controller, robot,ts, us, Fs, f_es, qs, q_dots, q_r_dots, V_Ts)
+    plotter = PlotSimResults(planner, controller, robot)
     plotter.plotRobot(fig, ax, ts, qs, us)
     plotter.plotVelocityField(fig, ax, qs)
-    plotter.plotConfigState(fig, ax, color='r')
+    plotter.plotConfigState(fig, ax, qs, color='blue')
     plt.show()
 
 def runVizVelocityField():
@@ -91,6 +90,6 @@ def runVizVelocityField():
 
 if __name__ == '__main__':
     # Choose which sim to run, sims are in 2D (x, z) plane
-    runAMSim(control='TaskPVFC', sim_time=60)  # control = 'TaskPVFC' or 'PDControl'
+    runAMSim(control='PVFC', sim_time=60)  # control = 'PVFC' or 'PDControl'
     # runQuadSim(sim_time=90)
     # runVizVelocityField()
