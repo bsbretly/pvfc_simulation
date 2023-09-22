@@ -31,7 +31,7 @@ ramp_force_params = namedtuple('ramp_force_params', ['ramp_k', 'ramp_mu'], defau
 point_normal_gain, point_tangent_gain = 1., 1
 z_intercept = 0.
 horizontal_normal_gain, horizontal_tangent_gain = 1., 1.
-up_ramp_normal_gain, up_ramp_tangent_gain = 1.,1.#10., 1.
+up_ramp_normal_gain, up_ramp_tangent_gain = 1., 1.
 p1, p2 = [0.,0.], [5.,.25] # two points on the ramp
 delta = 0.1 # distance "beyond" surface to facilitate interaction [m]
 x_d, z_d = 0.5, 1. # desired point
@@ -52,6 +52,6 @@ up_ramp_planner_params = namedtuple('up_ramp_planner_params', ['delta', 'p1', 'p
 super_quadratic_params = namedtuple('super_quadratic_params', ['obs_x', 'obs_z', 'obs_m', 'obs_n', 'obs_L', 'obs_len'], defaults=(obs_x, obs_z, obs_m, obs_n, obs_L, obs_len))
 
 # initial conditions
-AM_q, AM_q_dot = np.array([[0., .5, 0.*DEG_TO_RAD, 90.*DEG_TO_RAD]]).T, np.array([[0.1 , -0.01, 0., 0.]]).T # q = [x, z, theta, Beta]^T
+AM_q, AM_q_dot = np.array([[0., .2, 0.*DEG_TO_RAD, 90.*DEG_TO_RAD]]).T, np.array([[0.1 , -0.01, 0., 0.]]).T # q = [x, z, theta, Beta]^T
 quad_q, quad_q_dot = np.array([[0., 0., 0.*DEG_TO_RAD]]).T, np.array([[0. , 0.05, 0.]]).T # q = [x, z, theta]^T
 q_r, q_r_dot = np.array(0.), np.array(0.)

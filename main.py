@@ -40,13 +40,13 @@ def runAMSim(control='PVFC', sim_time=10, dt=0.01):
     plotter.plotConfigState(fig, ax, qs, color='blue')
     plotter.plotTaskState(fig, ax, q_Ts, color='green')
 
-    # # plot 2
-    # fig, ax = plt.subplots(2, 1, figsize=(16,9), sharex=True)
-    # plotter.plotPowerAnnihilation(fig, ax, ts, Fs, F_rs, q_T_dots, q_r_dots)
+    # plot 2
+    fig, ax = plt.subplots(2, 1, figsize=(16,9), sharex=True)
+    plotter.plotPowerAnnihilation(fig, ax, ts, Fs, F_rs, q_T_dots, q_r_dots)
 
-    # # plot 3
-    # fig, ax = plt.subplots(3, 1, figsize=(16,9), sharex=True)
-    # plotter.plotPassivity(fig, ax, ts, q_T_dots, q_r_dots, f_es)
+    # plot 3
+    fig, ax = plt.subplots(3, 1, figsize=(16,9), sharex=True)
+    plotter.plotPassivity(fig, ax, ts, q_T_dots, q_r_dots, f_es)
 
     plt.show()
 
@@ -90,7 +90,8 @@ def runVizVelocityField():
 
 if __name__ == '__main__':
     # Choose which sim to run, sims are in 2D (x, z) plane
-    controller = 'PDControl'  # control = 'PVFC' or 'PDControl'
+    controller = 'PVFC'  # control = 'PVFC' or 'PDControl'
     runAMSim(control=controller, sim_time=60)  
     # runQuadSim(sim_time=90)
     # runVizVelocityField()
+    # TODO: plot tracking error 
