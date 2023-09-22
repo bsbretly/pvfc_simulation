@@ -16,10 +16,10 @@ class BaseControl:
         thrust, theta_d = util.decomposeThrustVector(Lambda)
         return np.array([thrust, theta_d]).T
         
-    def computeAttitudeControl(self, q, q_dot, tau, task=False):
+    def computeAttitudeControl(self, q, q_dot, tau, task_space=False):
         thrust, theta_d = self.decomposeThrust(tau)
         tau_theta_d = self.dynamics.I*(self.theta_K_p*(theta_d - q[2,0]) + self.theta_K_d*(0. - q_dot[2,0]))
-        if task: return np.array([[thrust, tau_theta_d + tau[-1,0], tau[-1,0]]]).T
+        if task_space: return np.array([[thrust, tau_theta_d + tau[-1,0], tau[-1,0]]]).T
         else: return np.array([[thrust, tau_theta_d]]).T
     
     def computeConfigForceControl(self, q, q_dot, F_T):
@@ -44,7 +44,7 @@ class BaseControl:
             config space acceleration command - tau
         '''
         a_q = np.linalg.pinv(J)@(a_x - J_dot@q_dot)
-        M, C, G, _ = self.dynamics.computeDynamics(q, q_dot)
+        M, C, G, _ = self.computeDynamics(q, q_dot)
         return M@a_q + C@q_dot + G
     
     def computeDynamics(self, q, q_dot):
@@ -52,16 +52,16 @@ class BaseControl:
     
     def step(self, q, q_dot, q_r, q_r_dot, V_bar, V_bar_dot, dt):
         M, C = self.computeDynamics(q, q_dot)
-        if self.dynamics.__class__.__name__==('AerialManipulatorTaskDynamics'):
+        if self.dynamics.__class__.__name__==('AerialManipulatorTaskDynamics'):  # task space
             _, q_T_dot = util.configToTask(q, q_dot, self.dynamics.tool_length)
-            F_T, q_r, q_r_dot = self.computeControlAction(q_T_dot, q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt)
-            F = self.computeConfigForceControl(q, q_dot, F_T[:-1,:])
-            u = self.computeAttitudeControl(q, q_dot, F, task=True)
-            return u, F_T, q_r, q_r_dot
-        elif self.dynamics.__class__.__name__==('QuadrotorTranslationalDynamics'):
+            F_T, F_r, q_r, q_r_dot = self.computeControlAction(q_T_dot, q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt)
+            F = self.computeConfigForceControl(q, q_dot, F_T)
+            u = self.computeAttitudeControl(q, q_dot, F, task_space=True)
+            return u, F_T, F_r, q_r, q_r_dot
+        elif self.dynamics.__class__.__name__==('QuadrotorTranslationalDynamics'):  # configuration space
             F, q_r, q_r_dot = self.computeControlAction(q_dot[:-1,:], q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt)
-            u = self.computeAttitudeControl(q, q_dot, F, task=False)
-            return u, F, q_r, q_r_dot
+            u = self.computeAttitudeControl(q, q_dot, F, task_space=False)
+            return u, F, F_r, q_r, q_r_dot
         else:    
             raise NotImplementedError("Dynamics not defined for the controller.")
         
@@ -81,7 +81,9 @@ class PDControl(BaseControl):
         output: 
             PVFC action to the robot, - tau_c + tau_f
         '''       
-        return M@V_bar_dot[:2] + C@V_bar[:2] - self.K_d*(q_dot[:2] - V_bar[:2])
+        tau = M@V_bar_dot[:2] + C@V_bar[:2] - self.K_p*(q_dot - V_bar[:2])
+        tau_r = np.array(0.)  # no reservoir control
+        return tau, tau_r, q_r, q_r_dot
  
 
 class PVFC(BaseControl):
@@ -102,12 +104,12 @@ class PVFC(BaseControl):
         P_bar = M_bar@(V_bar)
         tau_c = ((w_bar@P_bar.T - P_bar@w_bar.T)@(qbar_dot)) / (2 * self.E_bar)
         tau_f = self.gamma*(P_bar@p_bar.T - p_bar@P_bar.T)@(qbar_dot)
-        tau = tau_c + tau_f
-        q_r, q_r_dot = self.updateReservoirState(tau, q_r, q_r_dot, dt)
-        return tau, q_r, q_r_dot
+        tau_bar = tau_c + tau_f
+        q_r, q_r_dot = self.updateReservoirState(tau_bar[-1,-1], q_r, q_r_dot, dt)
+        return tau_bar[:2,:], tau_bar[-1,-1], q_r, q_r_dot
     
-    def updateReservoirState(self, F, q_r, q_r_dot, dt):        
-        q_r_ddot = F[-1,-1] / self.m_r
+    def updateReservoirState(self, tau_r, q_r, q_r_dot, dt):        
+        q_r_ddot = tau_r / self.m_r
         q_r_dot += q_r_ddot*dt
         q_r += q_r_dot*dt
         return q_r, q_r_dot

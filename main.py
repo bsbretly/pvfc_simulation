@@ -20,7 +20,7 @@ def runAMSim(control='PVFC', sim_time=10, dt=0.01):
 
     # run simulation
     sim = Sim(planner, controller, robot, params.ramp_force_params())
-    ts, u, F, f_e, q, q_dot, q_r_dot = sim.run(params.AM_q, params.AM_q_dot, params.q_r, params.q_r_dot, params.F_e, sim_time=sim_time, dt=dt)
+    ts, u, F, F_r, f_e, q, q_dot, q_r_dot = sim.run(params.AM_q, params.AM_q_dot, params.q_r, params.q_r_dot, params.F_e, sim_time=sim_time, dt=dt)
 
     # get task space variables
     q_T, q_T_dot = zip(*[util.configToTask(q_i, q_dot_i, robot.dynamics.tool_length) for q_i, q_dot_i in zip(np.concatenate(q,axis=1).T[:,:,None], np.concatenate(q_dot,axis=1).T[:,:,None])])
@@ -29,7 +29,7 @@ def runAMSim(control='PVFC', sim_time=10, dt=0.01):
     V_T, V_T_dot = zip(*[sim.planner.step(q_i, q_dot_i) for q_i, q_dot_i in zip(np.concatenate(q,axis=1).T[:,:,None], np.concatenate(q_dot,axis=1).T[:,:,None])])
 
     # concatenate data
-    us, Fs, f_es, qs, q_dots, q_Ts, q_T_dots, q_r_dots, V_Ts =  np.concatenate(u,axis=1), np.concatenate(F,axis=1), np.concatenate(f_e,axis=1), np.concatenate(q,axis=1), np.concatenate(q_dot,axis=1), np.concatenate(q_T,axis=1), np.concatenate(q_T_dot,axis=1), (q_r_dot), np.concatenate(V_T,axis=1)
+    us, Fs, F_rs, f_es, qs, q_dots, q_Ts, q_T_dots, q_r_dots, V_Ts =  np.concatenate(u,axis=1), np.concatenate(F,axis=1), (F_r), np.concatenate(f_e,axis=1), np.concatenate(q,axis=1), np.concatenate(q_dot,axis=1), np.concatenate(q_T,axis=1), np.concatenate(q_T_dot,axis=1), (q_r_dot), np.concatenate(V_T,axis=1)
 
     # plot 1
     fig, ax = plt.subplots(1, 1, figsize=(16,9), sharex=True)
@@ -42,7 +42,7 @@ def runAMSim(control='PVFC', sim_time=10, dt=0.01):
 
     # # plot 2
     # fig, ax = plt.subplots(2, 1, figsize=(16,9), sharex=True)
-    # plotter.plotPowerAnnihilation(fig, ax, ts, Fs, q_T_dots, q_r_dots)
+    # plotter.plotPowerAnnihilation(fig, ax, ts, Fs, F_rs, q_T_dots, q_r_dots)
 
     # # plot 3
     # fig, ax = plt.subplots(3, 1, figsize=(16,9), sharex=True)
@@ -79,7 +79,7 @@ def runVizVelocityField():
     planner = UpRampVelocityField(params.base_AM_planner_params(), params.base_up_ramp_planner_params(), params.up_ramp_planner_params(), visualize=True)
     plotter = VizVelocityField(planner)
     # plot
-    fig, ax = plt.subplots(1, 1)#, figsize=(16,9), sharex=True)
+    fig, ax = plt.subplots(1, 1, figsize=(16,9), sharex=True)
     # make test arrays of states
     z_T = np.linspace(0, 1, 10)
     x_T = np.linspace(0, 4, 20) 
@@ -90,6 +90,7 @@ def runVizVelocityField():
 
 if __name__ == '__main__':
     # Choose which sim to run, sims are in 2D (x, z) plane
-    runAMSim(control='PVFC', sim_time=60)  # control = 'PVFC' or 'PDControl'
+    controller = 'PDControl'  # control = 'PVFC' or 'PDControl'
+    runAMSim(control=controller, sim_time=60)  
     # runQuadSim(sim_time=90)
     # runVizVelocityField()

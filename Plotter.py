@@ -128,9 +128,9 @@ class PlotSimResults:
         plt.suptitle(r'$\bar{E}\ \text{Passivity Comparison}$')
         return fig, ax
     
-    def plotPowerAnnihilation(self, fig, ax, ts, Fs, q_T_dots, q_r_dots):
-        f_power =  np.array([q_T_dots[:,i].reshape(-1,1).T@Fs[:2,i].reshape(-1,1) for i in range(q_T_dots.shape[1])]).squeeze()
-        f_r_power = q_r_dots*Fs[-1,:]
+    def plotPowerAnnihilation(self, fig, ax, ts, Fs, F_rs, q_T_dots, q_r_dots):
+        f_power =  np.array([q_T_dots[:,i].reshape(-1,1).T@Fs[:,i].reshape(-1,1) for i in range(q_T_dots.shape[1])]).squeeze()
+        f_r_power = np.array(q_r_dots)*np.array(F_rs)
 
         ax[0].plot(ts, f_r_power, label=r'$x_r f_r$')
         ax[0].plot(ts, f_power, label=r'$\dot{\boldsymbol{x}}^T \tilde{\boldsymbol{F}}$')
@@ -161,9 +161,7 @@ class PlotSimResults:
                 V = self.planner.plotStep(q_T)
                 V_x[i,j] = V[0]
                 V_z[i,j] = V[1]
-        ax.quiver(p_x, p_z, V_x, V_z, color='k', pivot='middle', alpha=0.3, angles='xy', scale_units='xy', scale=50, width=0.0005*x_max)#headwidth=1, headlength=3, headaxislength=2.5)
-        # ax.set_aspect('equal', 'box')
-        # ax.set_ylim(top=0.5)
+        ax.quiver(p_x, p_z, V_x, V_z, color='k', pivot='middle', alpha=0.3, angles='xy', scale_units='xy', scale=50, width=0.0005*x_max)
         return fig, ax
     
     def createGrid(self, x, y):
@@ -236,6 +234,7 @@ class VizVelocityField(PlotSimResults):
         return fig, ax
 
     def plotVelocityField(self, fig, ax, x_T, z_T):
+        x_max = np.amax(x_T)
         p_x, p_z, V_x, V_z = self.createGrid(x_T,z_T)
         for i in range(p_x.shape[0]):
             for j in range(p_x.shape[1]):
@@ -243,10 +242,9 @@ class VizVelocityField(PlotSimResults):
                 V = self.planner.plotStep(q_T)
                 V_x[i,j] = V[0]
                 V_z[i,j] = V[1]
-        ax.quiver(p_x, p_z, V_x, V_z, color='k', pivot='middle', alpha=0.3)
+        ax.quiver(p_x, p_z, V_x, V_z, color='k', pivot='middle', alpha=0.3, angles='xy', scale_units='xy', scale=50, width=0.0005*x_max)
         ax.set_xlabel(r'$x\ [s]$')
         ax.set_ylabel(r'$z\ [m]$')
-        # ax.set_ylim(top=1.5)
         return fig, ax
     
     def plotTest(self, fig, ax, x_T, y_T):
