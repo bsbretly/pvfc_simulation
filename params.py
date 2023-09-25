@@ -9,11 +9,11 @@ quadrotor_params = namedtuple('quadrotor_params', ['m', 'I'], defaults = (m, I))
 AM_params = namedtuple('AM_params', ['m', 'm_t', 'I', 'I_t', 'tool_length'], defaults = (m, m_t, I, I_t, tool_length))
 
 # Control parameters
-E_bar, m_r, gamma = 150, .1, .1  # PVFC
+E_bar, m_r, gamma = 150, .1, .1  # passivity-based controller
 theta_K_p, theta_K_d = 200., 20.  # attitude controller
 K_p, K_d = .1, .4  # PD contrller
 attitude_control_params = namedtuple('attitude_control_params', ['theta_K_p', 'theta_K_d'], defaults=(theta_K_p, theta_K_d))
-pvfc_params = namedtuple('pvfc_params', ['m_r', 'E_bar', 'gamma'], defaults=(m_r, E_bar, gamma))
+passive_params = namedtuple('passive_params', ['m_r', 'E_bar', 'gamma'], defaults=(m_r, E_bar, gamma))
 pd_params = namedtuple('pd_params', ['K_p', 'K_d'], defaults=(K_p, K_d))
 
 # External force

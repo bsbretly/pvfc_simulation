@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def computeRampParams(p1, p2):
     '''
     input: 

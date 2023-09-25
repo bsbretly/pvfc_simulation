@@ -54,49 +54,76 @@ class BaseControl:
         M, C = self.computeDynamics(q, q_dot)
         if self.dynamics.__class__.__name__==('AerialManipulatorTaskDynamics'):  # task space
             _, q_T_dot = util.configToTask(q, q_dot, self.dynamics.tool_length)
-            F_T, F_r, q_r, q_r_dot = self.computeControlAction(q_T_dot, q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt)
+            F_T, f_r, q_r, q_r_dot = self.computeControlAction(q_T_dot, q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt)
             F = self.computeConfigForceControl(q, q_dot, F_T)
             u = self.computeAttitudeControl(q, q_dot, F, task_space=True)
-            return u, F_T, F_r, q_r, q_r_dot
+            return u, F_T, f_r, q_r, q_r_dot
         elif self.dynamics.__class__.__name__==('QuadrotorTranslationalDynamics'):  # configuration space
-            F, q_r, q_r_dot = self.computeControlAction(q_dot[:-1,:], q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt)
+            F, f_r, q_r, q_r_dot = self.computeControlAction(q_dot[:-1,:], q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt)
             u = self.computeAttitudeControl(q, q_dot, F, task_space=False)
-            return u, F, F_r, q_r, q_r_dot
+            return u, F, f_r, q_r, q_r_dot
         else:    
             raise NotImplementedError("Dynamics not defined for the controller.")
         
     def computeControlAction(self, *args, **kwargs):
         raise NotImplementedError("computeControlAction() method not implemented.")
+    
+
+class PassiveBaseControl(BaseControl):
+    def __init__(self, robot_params, attitude_control_params, *args):
+        super().__init__(robot_params, attitude_control_params)
+        self.m_r, self.E_bar, self.gamma = args[0]
+
+    def updateReservoirState(self, tau_r, q_r, q_r_dot, dt):        
+        q_r_ddot = tau_r / self.m_r
+        q_r_dot += q_r_ddot*dt
+        q_r += q_r_dot*dt
+        return q_r, q_r_dot
+    
+    def computeDynamics(self, q, q_dot):
+        M, C = super().computeDynamics(q, q_dot)
+        return util.augmentDynamics(M, C, self.m_r)
 
 
 class PDControl(BaseControl):
-    def __init__(self, robot_params, attitude_control_params, pd_control_params):
+    def __init__(self, robot_params, attitude_control_params, *args):
         super().__init__(robot_params, attitude_control_params)
-        self.K_p, self.K_d = pd_control_params
+        self.K_p, self.K_d = args[0]
 
     def computeControlAction(self, q_dot, q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt):
         ''' 
         input: 
             robot state, reservoir state, desired velocity field, dynamics, time step
         output: 
-            PVFC action to the robot, - tau_c + tau_f
+            control action to the robot, reservoir and updated reservoir state, - tau, tau_r, q_r, q_r_dot
         '''       
         tau = M@V_bar_dot[:2] + C@V_bar[:2] - self.K_p*(q_dot - V_bar[:2])
         tau_r = np.array(0.)  # no reservoir control
         return tau, tau_r, q_r, q_r_dot
+
+
+class PassivePDControl(PassiveBaseControl):
+    def __init__(self, robot_params, attitude_control_params, *args):
+        super().__init__(robot_params, attitude_control_params, args[0])
+        self.K_p, self.K_d = args[1]
+
+    def computeControlAction(self, q_dot, q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt):
+        qbar_dot = np.vstack([q_dot, q_r_dot])
+        tau_bar = M@V_bar_dot + C@V_bar - self.K_p*(qbar_dot - V_bar)
+        q_r, q_r_dot = self.updateReservoirState(tau_bar[-1,-1], q_r, q_r_dot, dt)
+        return tau_bar[:2,:], tau_bar[-1,-1], q_r, q_r_dot
  
 
-class PVFC(BaseControl):
-    def __init__(self, robot_parameters, attitude_control_params, pvfc_params):
-        super().__init__(robot_parameters, attitude_control_params)
-        self.m_r, self.E_bar, self.gamma = pvfc_params
+class PVFC(PassiveBaseControl):
+    def __init__(self, robot_parameters, attitude_control_params, *args):
+        super().__init__(robot_parameters, attitude_control_params, *args)
 
     def computeControlAction(self, q_dot, q_r, q_r_dot, V_bar, V_bar_dot, M_bar, C_bar, dt):
         ''' 
         input: 
             robot state, reservoir state, desired velocity field, dynamics, time step
         output: 
-            PVFC action to the robot, - tau_c + tau_f
+            control action to the robot, reservoir and updated reservoir state, - tau, tau_r, q_r, q_r_dot
         '''        
         qbar_dot = np.vstack([q_dot, q_r_dot])
         w_bar = M_bar@(V_bar_dot) + C_bar@(V_bar)
@@ -108,13 +135,5 @@ class PVFC(BaseControl):
         q_r, q_r_dot = self.updateReservoirState(tau_bar[-1,-1], q_r, q_r_dot, dt)
         return tau_bar[:2,:], tau_bar[-1,-1], q_r, q_r_dot
     
-    def updateReservoirState(self, tau_r, q_r, q_r_dot, dt):        
-        q_r_ddot = tau_r / self.m_r
-        q_r_dot += q_r_ddot*dt
-        q_r += q_r_dot*dt
-        return q_r, q_r_dot
     
-    def computeDynamics(self, q, q_dot):
-        M, C = super().computeDynamics(q, q_dot)
-        return util.augmentDynamics(M, C, self.m_r)
     

@@ -11,6 +11,48 @@ class PlotSimResults:
         self.planner, self.controller, self.robot = planner, controller, robot
         fp.setupPlotParams()
 
+    def plotVelocityField(self, fig, ax, qs):
+        minimum = np.amin(np.concatenate((qs[0,:], qs[1,:])))
+        maximum = np.amax(np.concatenate((qs[0,:], qs[1,:])))
+        array = np.linspace(0, maximum, 25)
+        x_max = np.amax(qs[0,:])
+        z_max = np.amax(qs[1,:])
+        x_array = np.linspace(0, x_max, 10)  
+        z_array = np.linspace(0, z_max, 10)
+        p_x, p_z, V_x, V_z = self.createGrid(x_array,z_array)
+        for i in range(p_x.shape[0]):
+            for j in range(p_x.shape[1]):
+                q_T = np.array([p_x[i, j], p_z[i, j]]).reshape(-1,1)
+                V = self.planner.plotStep(q_T)
+                V_x[i,j] = V[0]
+                V_z[i,j] = V[1]
+        magnitude = np.sqrt(V_x**2 + V_z**2)
+        max_magnitude = np.max(magnitude)
+        fraction_of_axis = .2
+        shorter_axis_length = min(x_max, z_max)
+        scale = max_magnitude / (fraction_of_axis * shorter_axis_length)
+        
+        ax.quiver(p_x, p_z, V_x, V_z, color='k', pivot='middle', alpha=0.3, angles='xy', scale_units='xy', scale=scale, width=0.001*min(x_max, z_max))
+        return fig, ax
+    
+    def createGrid(self, x, y):
+        p_x, p_y = np.meshgrid(x, y, indexing='ij')
+        return p_x, p_y, np.zeros((x.size,y.size)), np.zeros((x.size,y.size))
+    
+    def plotConfigState(self, fig, ax, qs, color='blue', linestyle='--'):
+        ax.plot(qs[0,:], qs[1,:], color=color, linestyle=linestyle)
+
+    def display(self, fig, ax, q_t, u_t):
+        x, z, theta = q_t[0], q_t[1], q_t[2]
+        wing_span = 0.15/2
+        ax.plot(x, z, 'ro', label='quadrotor')
+        quad_x = [x-wing_span*np.cos(-theta), x+wing_span*np.cos(-theta)]
+        quad_z = [z-wing_span*np.sin(-theta), z+wing_span*np.sin(-theta)]
+        ax.plot(quad_x, quad_z, 'r')
+        ax.set_xlabel(r'$x\ [s]$')
+        ax.set_ylabel(r'$z\ [m]$')
+        return fig, ax
+
     def plotRamp(self, fig, ax, q_Ts, color='black', linestyle='-'):
         m,b = util.computeRampParams(self.planner.p1, self.planner.p2)
         x = np.linspace(0, q_Ts[0,-1], 100)
@@ -28,23 +70,73 @@ class PlotSimResults:
         ax[1].set_ylabel(r'$z\ [m]$')
         ax[1].legend()
         return fig, ax
-    
-    def plotVelocityTracking(self, fig, ax):
-        q_bar_dots = np.vstack((self.q_T_dots, self.q_r_dots))
-        K = [0.5*self.robot.dynamics.m*q_T_dot.T@q_T_dot for q_T_dot in self.q_T_dots.T[:,:,None]]
-        m_bar = np.array([[self.robot.dynamics.m, 0, 0], [0, self.robot.dynamics.m, 0], [0, 0, self.controller.m_r]])
-        K_bar = np.concatenate([0.5*q_bar_dot.T@m_bar@q_bar_dot for q_bar_dot in q_bar_dots.T[:,:,None]])
-        Beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
-        ax[0].plot(self.ts, self.q_T_dots[0,:], 'b', label=r'$q_{T,x}$')
-        ax[0].plot(self.ts, Beta*self.Vs[0,:], 'g--', label=r'$V_{T,x}$')
+
+    def plotVelocityTracking(self, fig, ax, ts, q_T_dots, Vs):
+        ax[0].plot(ts, q_T_dots[0,:], 'b', label=r'$\dot{x}_T$')
+        ax[0].plot(ts, Vs[0,:], 'g--', label=r'$V_x$')
         ax[0].set_ylabel(r'$v\ [m/s]$')
         ax[0].legend()
         
-        ax[1].plot(self.ts, self.q_T_dots[1,:], 'b', label=r'$q_{T,z}$')
-        ax[1].plot(self.ts, Beta*self.Vs[1,:], 'g--', label=r'$V_{T,z}$')
+        ax[1].plot(ts, q_T_dots[1,:], 'b', label=r'$\dot{z}_T$')
+        ax[1].plot(ts, Vs[1,:], 'g--', label=r'$V_z$')
         ax[1].set_ylabel(r'$v\ [m/s]$')
         ax[1].legend()
         ax[1].set_xlabel(r'$t\ [s]$')
+        return fig, ax
+    
+    def plotTaskState(self, fig, ax, q_Ts, color='r', linestyle='--'):
+        ax.plot(q_Ts[0,:], q_Ts[1,:], color=color, linestyle=linestyle)
+    
+    def display(self, fig, ax, q, u):
+        x, z, theta, Beta = q[0], q[1], q[2], q[3]
+        wing_span = self.robot.dynamics.tool_length*2
+        q_T, _ = util.configToTask(q, np.zeros_like(q), self.robot.dynamics.tool_length)
+        ax.plot(x, z, 'bo', label='quadrotor')
+        ax.plot(q_T[0], q_T[1], 'go', label='tool tip')
+        quad_x = [x-wing_span*np.cos(-theta), x+wing_span*np.cos(-theta)]
+        quad_z = [z-wing_span*np.sin(-theta), z+wing_span*np.sin(-theta)]
+        ax.plot(quad_x, quad_z, 'blue')
+        ax.plot([x, q_T[0]], [z, q_T[1]], 'green')
+        ax.set_xlabel(r'$x\ [m]$')
+        ax.set_ylabel(r'$z\ [m]$')
+        # print('lambda: ', f'{u_t[0]:.2f}', 'theta: ', f'{theta*180/np.pi:.2f}', 'Beta: ', f'{Beta*180/np.pi:.2f}')
+        return fig, ax
+
+    def plotTaskState(self, fig, ax, q_Ts, color='r', linestyle='--'):
+        ax.plot(q_Ts[0,:], q_Ts[1,:], color=color, linestyle=linestyle)
+    
+    # def plotRobot(self, fig, ax, ts, qs, us, linestyle = '-', color='red', num=8):
+    #     idxs = np.rint(np.linspace(0, len(ts)-1, num)).astype(int)
+    #     for i in idxs:
+    #         self.display(fig, ax, qs[:,i], us[:,i])
+    #     quad = mlines.Line2D([], [], color=color, marker='o', linestyle=linestyle, markersize=5, label='quadrotor')
+    #     ax.legend(handles=[quad])
+    
+    def plotRobot(self, fig, ax, ts, qs, us, num=8):
+        idxs = np.rint(np.linspace(0, len(ts)-1, num)).astype(int)
+        for i in idxs:
+            self.display(fig, ax, qs[:,i:i+1], us[:,i:i+1])
+        quad = mlines.Line2D([], [], color='blue', marker='o', linestyle='-', markersize=5, label='quadrotor')
+        if self.robot.__class__.__name__ == 'AerialManipulator':
+            tool = mlines.Line2D([], [], color='green', marker='o', linestyle='None', markersize=5, label='tool tip')
+            ax.legend(handles=[quad, tool])
+        else: ax.legend(handles=[quad])
+
+
+class PlotPassiveSimResults(PlotSimResults):
+    def __init__(self, planner, controller, robot):
+        super().__init__(planner, controller, robot)
+
+    def plotVelocityTracking(self, fig, ax, ts, q_T_dots, q_r_dots, Vs):
+        fig, ax = super().plotVelocityTracking(fig, ax, ts, q_T_dots, Vs)
+        q_bar_dots = np.vstack((q_T_dots, q_r_dots))
+        m_bar = np.array([[self.robot.dynamics.m, 0, 0], [0, self.robot.dynamics.m, 0], [0, 0, self.controller.m_r]])
+        K_bar = np.concatenate([0.5*q_bar_dot.T@m_bar@q_bar_dot for q_bar_dot in q_bar_dots.T[:,:,None]])
+        Beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
+        ax[0].plot(ts, Beta*Vs[0,:], 'r--', label=r'$\beta V_x$')  # plot Beta velocity tracking
+        ax[1].plot(ts, Beta*Vs[1,:], 'r--', label=r'$\beta V_z$')
+        ax[0].legend()
+        ax[1].legend()
         return fig, ax
     
     def plotPassivity(self, fig, ax, ts, q_T_dots, q_r_dots, f_es):
@@ -139,99 +231,32 @@ class PlotSimResults:
 
         ax[1].plot(ts, f_power + f_r_power, linestyle=(0,(1,1)), label=r'$\dot{\boldsymbol{x}}^T \tilde{\boldsymbol{F}} + x_r f_r$')
         ax[1].legend()
-        ax[1].set_ylim(-0.02, 0.02)
+        # ax[1].set_ylim(-0.02, 0.02)
         ax[1].set_ylabel(r'$[W]$')
         ax[1].set_xlabel(r'$t\ [s]$')
         ax[1].set_xbound(0, ts[-1])
         plt.suptitle(r'$\text{Power Annihilation}$')
         return fig, ax
     
-    def plotVelocityField(self, fig, ax, qs):
-        min = np.amin(np.concatenate((qs[0,:], qs[1,:])))
-        max = np.amax(np.concatenate((qs[0,:], qs[1,:])))
-        array = np.linspace(0, max, 25)
-        x_max = np.amax(qs[0,:])
-        z_max = np.amax(qs[1,:])
-        x_array = np.linspace(0, x_max, 10)  
-        z_array = np.linspace(0, 1, 10)
-        p_x, p_z, V_x, V_z = self.createGrid(x_array,z_array)
-        for i in range(p_x.shape[0]):
-            for j in range(p_x.shape[1]):
-                q_T = np.array([p_x[i, j], p_z[i, j]]).reshape(-1,1)
-                V = self.planner.plotStep(q_T)
-                V_x[i,j] = V[0]
-                V_z[i,j] = V[1]
-        ax.quiver(p_x, p_z, V_x, V_z, color='k', pivot='middle', alpha=0.3, angles='xy', scale_units='xy', scale=50, width=0.0005*x_max)
-        return fig, ax
     
-    def createGrid(self, x, y):
-        p_x, p_y = np.meshgrid(x, y, indexing='ij')
-        return p_x, p_y, np.zeros((x.size,y.size)), np.zeros((x.size,y.size))
-    
-    def plotConfigState(self, fig, ax, qs, color='blue', linestyle='--'):
-        ax.plot(qs[0,:], qs[1,:], color=color, linestyle=linestyle)
-
-    def display(self, fig, ax, q_t, u_t):
-        x, z, theta = q_t[0], q_t[1], q_t[2]
-        wing_span = 0.15/2
-        ax.plot(x, z, 'ro', label='quadrotor')
-        quad_x = [x-wing_span*np.cos(-theta), x+wing_span*np.cos(-theta)]
-        quad_z = [z-wing_span*np.sin(-theta), z+wing_span*np.sin(-theta)]
-        ax.plot(quad_x, quad_z, 'r')
-        ax.set_xlabel(r'$x\ [s]$')
-        ax.set_ylabel(r'$z\ [m]$')
-        return fig, ax
-    
-    def plotRobot(self, fig, ax, ts, qs, us, linestyle = '-', color='red', num=8):
-        idxs = np.rint(np.linspace(0, len(ts)-1, num)).astype(int)
-        for i in idxs:
-            self.display(fig, ax, qs[:,i], us[:,i])
-        quad = mlines.Line2D([], [], color=color, marker='o', linestyle=linestyle, markersize=5, label='quadrotor')
-        ax.legend(handles=[quad])
 
 
-class PlotAMSimResults(PlotSimResults):
-    #TODO: Refractor to properly use inheritance
-    def __init__(self, planner, controller, robot):
-        super().__init__(planner, controller, robot)
+# class PlotAMSimResults(PlotSimResults):
+#     #TODO: Refractor to properly use inheritance
+#     def __init__(self, planner, controller, robot):
+#         super().__init__(planner, controller, robot)
     
-    def plotTaskState(self, fig, ax, q_Ts, color='r', linestyle='--'):
-        ax.plot(q_Ts[0,:], q_Ts[1,:], color=color, linestyle=linestyle)
     
-    def display(self, fig, ax, q, u):
-        x, z, theta, Beta = q[0], q[1], q[2], q[3]
-        wing_span = self.robot.dynamics.tool_length*2
-        # forward kinematics: configuration space to task space
-        q_T, _ = util.configToTask(q, np.zeros_like(q), self.robot.dynamics.tool_length)
-        ax.plot(x, z, 'bo', label='quadrotor')
-        ax.plot(q_T[0], q_T[1], 'go', label='tool tip')
-        quad_x = [x-wing_span*np.cos(-theta), x+wing_span*np.cos(-theta)]
-        quad_z = [z-wing_span*np.sin(-theta), z+wing_span*np.sin(-theta)]
-        ax.plot(quad_x, quad_z, 'blue')
-        ax.plot([x, q_T[0]], [z, q_T[1]], 'green')
-        ax.set_xlabel(r'$x\ [m]$')
-        ax.set_ylabel(r'$z\ [m]$')
-        # print('lambda: ', f'{u_t[0]:.2f}', 'theta: ', f'{theta*180/np.pi:.2f}', 'Beta: ', f'{Beta*180/np.pi:.2f}')
-        return fig, ax
-    
-    def plotRobot(self, fig, ax, ts, qs, us, num=8):
-        idxs = np.rint(np.linspace(0, len(ts)-1, num)).astype(int)
-        for i in idxs:
-            self.display(fig, ax, qs[:,i:i+1], us[:,i:i+1])
-        quad = mlines.Line2D([], [], color='blue', marker='o', linestyle='-', markersize=5, label='quadrotor')
-        tool = mlines.Line2D([], [], color='green', marker='o', linestyle='None', markersize=5, label='tool tip')
-        ax.legend(handles=[quad, tool])
-
 
 class VizVelocityField(PlotSimResults):
     def __init__(self, planner):
         self.planner = planner
         fp.setupPlotParams()
 
-    def plotRamp(self, fig, ax, x_T, color='black', linestyle='-'):
-        m,b = util.computeRampParams(self.planner.p1, self.planner.p2)    
-        ax.plot(x_T, m*x_T + b, color=color, linestyle=linestyle, linewidth=2)
-        return fig, ax
+    # def plotRamp(self, fig, ax, x_T, color='black', linestyle='-'):
+    #     m,b = util.computeRampParams(self.planner.p1, self.planner.p2)    
+    #     ax.plot(x_T, m*x_T + b, color=color, linestyle=linestyle, linewidth=2)
+    #     return fig, ax
 
     def plotVelocityField(self, fig, ax, x_T, z_T):
         x_max = np.amax(x_T)
