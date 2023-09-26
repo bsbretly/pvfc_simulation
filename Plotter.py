@@ -42,16 +42,35 @@ class PlotSimResults:
     def plotConfigState(self, fig, ax, qs, color='blue', linestyle='--'):
         ax.plot(qs[0,:], qs[1,:], color=color, linestyle=linestyle)
 
-    def display(self, fig, ax, q_t, u_t):
-        x, z, theta = q_t[0], q_t[1], q_t[2]
-        wing_span = 0.15/2
-        ax.plot(x, z, 'ro', label='quadrotor')
+    def display(self, fig, ax, q):
+        if self.robot.__class__.__name__ == 'AM': 
+            x, z, theta, Beta = q[0], q[1], q[2], q[3]
+            q_T, _ = util.configToTask(q, np.zeros_like(q), self.robot.dynamics.tool_length)
+            ax.plot(q_T[0], q_T[1], 'go', label='tool tip')  # plot tool
+        else: x, z, theta = q[0], q[1], q[2]
+        wing_span = 0.15*2
+        ax.plot(x, z, 'bo', label='quadrotor')
         quad_x = [x-wing_span*np.cos(-theta), x+wing_span*np.cos(-theta)]
         quad_z = [z-wing_span*np.sin(-theta), z+wing_span*np.sin(-theta)]
-        ax.plot(quad_x, quad_z, 'r')
+        ax.plot(quad_x, quad_z, 'green')
         ax.set_xlabel(r'$x\ [s]$')
         ax.set_ylabel(r'$z\ [m]$')
         return fig, ax
+    
+    # def display(self, fig, ax, q, u):
+        
+    #     wing_span = self.robot.dynamics.tool_length*2
+    #     q_T, _ = util.configToTask(q, np.zeros_like(q), self.robot.dynamics.tool_length)
+    #     ax.plot(x, z, 'bo', label='quadrotor')
+    #     ax.plot(q_T[0], q_T[1], 'go', label='tool tip')
+    #     quad_x = [x-wing_span*np.cos(-theta), x+wing_span*np.cos(-theta)]
+    #     quad_z = [z-wing_span*np.sin(-theta), z+wing_span*np.sin(-theta)]
+    #     ax.plot(quad_x, quad_z, 'blue')
+    #     ax.plot([x, q_T[0]], [z, q_T[1]], 'green')
+    #     ax.set_xlabel(r'$x\ [m]$')
+    #     ax.set_ylabel(r'$z\ [m]$')
+    #     # print('lambda: ', f'{u_t[0]:.2f}', 'theta: ', f'{theta*180/np.pi:.2f}', 'Beta: ', f'{Beta*180/np.pi:.2f}')
+    #     return fig, ax
 
     def plotRamp(self, fig, ax, q_Ts, color='black', linestyle='-'):
         m,b = util.computeRampParams(self.planner.p1, self.planner.p2)
@@ -87,23 +106,7 @@ class PlotSimResults:
     def plotTaskState(self, fig, ax, q_Ts, color='r', linestyle='--'):
         ax.plot(q_Ts[0,:], q_Ts[1,:], color=color, linestyle=linestyle)
     
-    def display(self, fig, ax, q, u):
-        x, z, theta, Beta = q[0], q[1], q[2], q[3]
-        wing_span = self.robot.dynamics.tool_length*2
-        q_T, _ = util.configToTask(q, np.zeros_like(q), self.robot.dynamics.tool_length)
-        ax.plot(x, z, 'bo', label='quadrotor')
-        ax.plot(q_T[0], q_T[1], 'go', label='tool tip')
-        quad_x = [x-wing_span*np.cos(-theta), x+wing_span*np.cos(-theta)]
-        quad_z = [z-wing_span*np.sin(-theta), z+wing_span*np.sin(-theta)]
-        ax.plot(quad_x, quad_z, 'blue')
-        ax.plot([x, q_T[0]], [z, q_T[1]], 'green')
-        ax.set_xlabel(r'$x\ [m]$')
-        ax.set_ylabel(r'$z\ [m]$')
-        # print('lambda: ', f'{u_t[0]:.2f}', 'theta: ', f'{theta*180/np.pi:.2f}', 'Beta: ', f'{Beta*180/np.pi:.2f}')
-        return fig, ax
-
-    def plotTaskState(self, fig, ax, q_Ts, color='r', linestyle='--'):
-        ax.plot(q_Ts[0,:], q_Ts[1,:], color=color, linestyle=linestyle)
+    
     
     # def plotRobot(self, fig, ax, ts, qs, us, linestyle = '-', color='red', num=8):
     #     idxs = np.rint(np.linspace(0, len(ts)-1, num)).astype(int)
@@ -115,7 +118,7 @@ class PlotSimResults:
     def plotRobot(self, fig, ax, ts, qs, us, num=8):
         idxs = np.rint(np.linspace(0, len(ts)-1, num)).astype(int)
         for i in idxs:
-            self.display(fig, ax, qs[:,i:i+1], us[:,i:i+1])
+            self.display(fig, ax, qs[:,i:i+1])
         quad = mlines.Line2D([], [], color='blue', marker='o', linestyle='-', markersize=5, label='quadrotor')
         if self.robot.__class__.__name__ == 'AerialManipulator':
             tool = mlines.Line2D([], [], color='green', marker='o', linestyle='None', markersize=5, label='tool tip')

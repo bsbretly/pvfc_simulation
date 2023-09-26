@@ -102,7 +102,7 @@ class PDControl(BaseControl):
         return tau, tau_r, q_r, q_r_dot
 
 
-class PassivePDControl(PassiveBaseControl):
+class AugmentedPDControl(PassiveBaseControl):
     def __init__(self, robot_params, attitude_control_params, *args):
         super().__init__(robot_params, attitude_control_params, args[0])
         self.K_p, self.K_d = args[1]
