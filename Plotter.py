@@ -17,8 +17,8 @@ class PlotSimResults:
         array = np.linspace(0, maximum, 25)
         x_max = np.amax(qs[0,:])
         z_max = np.amax(qs[1,:])
-        x_array = np.linspace(0, x_max, 10)  
-        z_array = np.linspace(0, z_max, 10)
+        x_array = np.linspace(0, x_max, int(maximum/5))
+        z_array = np.linspace(0, z_max, int(maximum/5))
         p_x, p_z, V_x, V_z = self.createGrid(x_array,z_array)
         for i in range(p_x.shape[0]):
             for j in range(p_x.shape[1]):
@@ -42,35 +42,21 @@ class PlotSimResults:
     def plotConfigState(self, fig, ax, qs, color='blue', linestyle='--'):
         ax.plot(qs[0,:], qs[1,:], color=color, linestyle=linestyle)
 
-    def display(self, fig, ax, q):
-        if self.robot.__class__.__name__ == 'AM': 
+    def display(self, fig, ax, q, max_x):
+        if self.robot.__class__.__name__ == 'AerialManipulator': 
             x, z, theta, Beta = q[0], q[1], q[2], q[3]
             q_T, _ = util.configToTask(q, np.zeros_like(q), self.robot.dynamics.tool_length)
-            ax.plot(q_T[0], q_T[1], 'go', label='tool tip')  # plot tool
+            ax.plot([x, q_T[0]], [z, q_T[1]], 'green')  # plot tool
+            ax.plot(q_T[0], q_T[1], 'go', label='tool tip')  # plot end-effector
         else: x, z, theta = q[0], q[1], q[2]
-        wing_span = 0.15*2
+        wing_span = 0.05*max_x
         ax.plot(x, z, 'bo', label='quadrotor')
         quad_x = [x-wing_span*np.cos(-theta), x+wing_span*np.cos(-theta)]
         quad_z = [z-wing_span*np.sin(-theta), z+wing_span*np.sin(-theta)]
-        ax.plot(quad_x, quad_z, 'green')
+        ax.plot(quad_x, quad_z, 'blue')
         ax.set_xlabel(r'$x\ [s]$')
         ax.set_ylabel(r'$z\ [m]$')
         return fig, ax
-    
-    # def display(self, fig, ax, q, u):
-        
-    #     wing_span = self.robot.dynamics.tool_length*2
-    #     q_T, _ = util.configToTask(q, np.zeros_like(q), self.robot.dynamics.tool_length)
-    #     ax.plot(x, z, 'bo', label='quadrotor')
-    #     ax.plot(q_T[0], q_T[1], 'go', label='tool tip')
-    #     quad_x = [x-wing_span*np.cos(-theta), x+wing_span*np.cos(-theta)]
-    #     quad_z = [z-wing_span*np.sin(-theta), z+wing_span*np.sin(-theta)]
-    #     ax.plot(quad_x, quad_z, 'blue')
-    #     ax.plot([x, q_T[0]], [z, q_T[1]], 'green')
-    #     ax.set_xlabel(r'$x\ [m]$')
-    #     ax.set_ylabel(r'$z\ [m]$')
-    #     # print('lambda: ', f'{u_t[0]:.2f}', 'theta: ', f'{theta*180/np.pi:.2f}', 'Beta: ', f'{Beta*180/np.pi:.2f}')
-    #     return fig, ax
 
     def plotRamp(self, fig, ax, q_Ts, color='black', linestyle='-'):
         m,b = util.computeRampParams(self.planner.p1, self.planner.p2)
@@ -106,21 +92,13 @@ class PlotSimResults:
     def plotTaskState(self, fig, ax, q_Ts, color='r', linestyle='--'):
         ax.plot(q_Ts[0,:], q_Ts[1,:], color=color, linestyle=linestyle)
     
-    
-    
-    # def plotRobot(self, fig, ax, ts, qs, us, linestyle = '-', color='red', num=8):
-    #     idxs = np.rint(np.linspace(0, len(ts)-1, num)).astype(int)
-    #     for i in idxs:
-    #         self.display(fig, ax, qs[:,i], us[:,i])
-    #     quad = mlines.Line2D([], [], color=color, marker='o', linestyle=linestyle, markersize=5, label='quadrotor')
-    #     ax.legend(handles=[quad])
-    
     def plotRobot(self, fig, ax, ts, qs, us, num=8):
         idxs = np.rint(np.linspace(0, len(ts)-1, num)).astype(int)
+        max_x = max(qs[0])
         for i in idxs:
-            self.display(fig, ax, qs[:,i:i+1])
+            self.display(fig, ax, qs[:,i:i+1], max_x)
         quad = mlines.Line2D([], [], color='blue', marker='o', linestyle='-', markersize=5, label='quadrotor')
-        if self.robot.__class__.__name__ == 'AerialManipulator':
+        if self.robot.__class__.__name__=='AerialManipulator':
             tool = mlines.Line2D([], [], color='green', marker='o', linestyle='None', markersize=5, label='tool tip')
             ax.legend(handles=[quad, tool])
         else: ax.legend(handles=[quad])
@@ -131,7 +109,7 @@ class PlotPassiveSimResults(PlotSimResults):
         super().__init__(planner, controller, robot)
 
     def plotVelocityTracking(self, fig, ax, ts, q_T_dots, q_r_dots, Vs):
-        fig, ax = super().plotVelocityTracking(fig, ax, ts, q_T_dots, Vs)
+        # fig, ax = super().plotVelocityTracking(fig, ax, ts, q_T_dots, Vs)
         q_bar_dots = np.vstack((q_T_dots, q_r_dots))
         m_bar = np.array([[self.robot.dynamics.m, 0, 0], [0, self.robot.dynamics.m, 0], [0, 0, self.controller.m_r]])
         K_bar = np.concatenate([0.5*q_bar_dot.T@m_bar@q_bar_dot for q_bar_dot in q_bar_dots.T[:,:,None]])
@@ -242,24 +220,10 @@ class PlotPassiveSimResults(PlotSimResults):
         return fig, ax
     
     
-
-
-# class PlotAMSimResults(PlotSimResults):
-#     #TODO: Refractor to properly use inheritance
-#     def __init__(self, planner, controller, robot):
-#         super().__init__(planner, controller, robot)
-    
-    
-
 class VizVelocityField(PlotSimResults):
     def __init__(self, planner):
         self.planner = planner
         fp.setupPlotParams()
-
-    # def plotRamp(self, fig, ax, x_T, color='black', linestyle='-'):
-    #     m,b = util.computeRampParams(self.planner.p1, self.planner.p2)    
-    #     ax.plot(x_T, m*x_T + b, color=color, linestyle=linestyle, linewidth=2)
-    #     return fig, ax
 
     def plotVelocityField(self, fig, ax, x_T, z_T):
         x_max = np.amax(x_T)

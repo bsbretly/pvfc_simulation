@@ -6,18 +6,18 @@ RAD_TO_DEG = 1/DEG_TO_RAD
 
 
 class VelocityPlanner: 
-    def __init__(self, base_planner_params, *args, visualize=False):
+    def __init__(self, base_robot_planner_params, base_planner_params, planner_params, visualize=False):
         self.visualize = visualize
-        if type(base_planner_params).__name__ == 'base_quad_planner_params': 
+        if type(base_robot_planner_params).__name__ == 'base_quad_planner_params': 
             self.task_space = False
-            self.m, self.m_r, self.E_bar = base_planner_params
-        elif type(base_planner_params).__name__ == 'base_AM_planner_params': 
+            self.m, self.m_r, self.E_bar = base_robot_planner_params
+        elif type(base_robot_planner_params).__name__ == 'base_AM_planner_params': 
             self.task_space = True
-            self.m, self.m_r, self.tool_length, self.E_bar = base_planner_params
+            self.m, self.m_r, self.tool_length, self.E_bar = base_robot_planner_params
         else: raise NotImplementedError("Planner parameters not implemented.")
         
         self.q_sym = sp.Matrix([sp.symbols('x'), sp.symbols('z')])
-        self.setParams(*args)
+        self.setParams(base_planner_params, planner_params)
         self.computeSymbolicV()
         if not self.visualize: self.augmentV()
         self.lambdifyV()
@@ -81,14 +81,14 @@ class VelocityPlanner:
         ''' this method has to initialize self.V_sym'''
         raise NotImplementedError("Must override computeSymbolicV")
 
-    def setParams(self, *args):
+    def setParams(self, base_planner_params, planner_params):
         ''' this method has to initialize the parameters of the subclass'''
         raise NotImplementedError("Must override setParams")
     
 
 class ContourVelocityField(VelocityPlanner):
-    def __init__(self, base_planner_params, *args, visualize=False):
-        super().__init__(base_planner_params, *args, visualize=visualize)
+    def __init__(self, base_robot_planner_params, base_planner_params, planner_params, visualize=False):
+        super().__init__(base_robot_planner_params, base_planner_params, planner_params, visualize=visualize)
     
     def setParams(self, base_contour_planner_params):
         self.normal_gain, self.tangent_gain = base_contour_planner_params
@@ -96,12 +96,12 @@ class ContourVelocityField(VelocityPlanner):
 
 class PointVelocityField(ContourVelocityField):
     # Velocity field from https://ieeexplore.ieee.org/document/8779551
-    def __init__(self, base_planner_params, base_point_planner_params, point_planner_params, visualize=False):
-        super().__init__(base_planner_params, base_point_planner_params, point_planner_params, visualize=visualize)
+    def __init__(self, base_robot_planner_params, base_point_planner_params, point_planner_params, visualize=False):
+        super().__init__(base_robot_planner_params, base_point_planner_params, point_planner_params, visualize=visualize)
 
-    def setParams(self, *args):
-        super().setParams(args[0])
-        self.x_d, self.z_d = args[1]
+    def setParams(self, base_planner_params, planner_params):
+        super().setParams(base_planner_params)
+        self.x_d, self.z_d = planner_params
         
     def computeSymbolicV(self): 
         Q_sym = sp.Matrix([self.x_d, self.z_d])
@@ -112,12 +112,12 @@ class PointVelocityField(ContourVelocityField):
 
 class HorinzontalLineVelocityField(ContourVelocityField):
     # Velocity field from https://ieeexplore.ieee.org/document/8779551
-    def __init__(self, base_planner_params, horizontal_line_planner_params, visualize=False):
-        super().__init__(base_planner_params, horizontal_line_planner_params, visualize=visualize)
+    def __init__(self, base_robot_planner_params, base_planner_params, planner_params, visualize=False):
+        super().__init__(base_robot_planner_params, base_planner_params, planner_params, visualize=visualize)
 
-    def setParams(self, *args):
-        super().setParams(args[0])
-        self.delta, self.z_intercept = args[1]
+    def setParams(self, base_planner_params, planner_params):
+        super().setParams(base_planner_params)
+        self.z_intercept, self.delta = planner_params
         
     def computeSymbolicV(self): 
         Q_sym = sp.Matrix([self.q_sym[0], self.z_intercept - self.delta]) # Q is the point offset by delta "into" the surface
@@ -128,12 +128,12 @@ class HorinzontalLineVelocityField(ContourVelocityField):
 
 class UpRampVelocityField(ContourVelocityField):
     # Velocity field from https://ieeexplore.ieee.org/document/8779551
-    def __init__(self, base_planner_params, *args, visualize=False):
-        super().__init__(base_planner_params, *args, visualize=visualize)
+    def __init__(self, base_robot_planner_params, base_planner_params, planner_params, visualize=False):
+        super().__init__(base_robot_planner_params, base_planner_params, planner_params, visualize=visualize)
         
-    def setParams(self, *args):
-        super().setParams(args[0])
-        self.delta, self.p1, self.p2 = args[1]
+    def setParams(self, base_planner_params, planner_params):
+        super().setParams(base_planner_params)
+        self.delta, self.p1, self.p2 = planner_params
         self.m, self.b = util.computeRampParams(self.p1, self.p2)
 
     def computeSymbolicV(self):
@@ -145,8 +145,8 @@ class UpRampVelocityField(ContourVelocityField):
 
 class SuperQuadraticField(VelocityPlanner):
     # Superquadriatic vector field from https://pure.strath.ac.uk/ws/portalfiles/portal/73873700/strathprints006243.pdf
-    def __init__(self, base_planner_params, super_quadratic_params, visualize=False):
-        super().__init__(base_planner_params, super_quadratic_params, visualize=visualize)
+    def __init__(self, base_robot_planner_params, super_quadratic_params, visualize=False):
+        super().__init__(base_robot_planner_params, super_quadratic_params, visualize=visualize)
 
     def setParams(self, superQuadraticParams): 
         self.obs_x, self.obs_z, self.obs_m, self.obs_n, self.obs_L, self.obs_len = superQuadraticParams

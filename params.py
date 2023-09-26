@@ -28,7 +28,7 @@ plane_force_params = namedtuple('plane_force_params', ['plane_k', 'plane_mu'], d
 ramp_force_params = namedtuple('ramp_force_params', ['ramp_k', 'ramp_mu'], defaults=(ramp_k, ramp_mu))
 
 # Planner parameters
-point_normal_gain, point_tangent_gain = 1., 1
+point_normal_gain, point_tangent_gain = 1., 1.
 z_intercept = 0.
 horizontal_normal_gain, horizontal_tangent_gain = 1., 1.
 up_ramp_normal_gain, up_ramp_tangent_gain = 1., 1.
@@ -47,7 +47,7 @@ base_horizontal_line_planner_params = namedtuple('base_horizontal_line_planner_p
 base_up_ramp_planner_params = namedtuple('base_up_ramp_planner_params', ['up_ramp_normal_gain', 'up_ramp_tangent_gain'], defaults=(up_ramp_normal_gain, up_ramp_tangent_gain))
 
 point_planner_params = namedtuple('point_planner_params', ['x_d', 'z_d'], defaults=(x_d, z_d))
-horizontal_line_planner_params = namedtuple('horizontal_line_planner_params', ['delta', 'z_intercept'], defaults=(z_intercept, delta))
+horizontal_line_planner_params = namedtuple('horizontal_line_planner_params', ['z_intercept', 'delta'], defaults=(z_intercept, delta))
 up_ramp_planner_params = namedtuple('up_ramp_planner_params', ['delta', 'p1', 'p2'], defaults=(delta, p1, p2))
 super_quadratic_params = namedtuple('super_quadratic_params', ['obs_x', 'obs_z', 'obs_m', 'obs_n', 'obs_L', 'obs_len'], defaults=(obs_x, obs_z, obs_m, obs_n, obs_L, obs_len))
 

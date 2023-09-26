@@ -135,5 +135,3 @@ class PVFC(PassiveBaseControl):
         q_r, q_r_dot = self.updateReservoirState(tau_bar[-1,-1], q_r, q_r_dot, dt)
         return tau_bar[:2,:], tau_bar[-1,-1], q_r, q_r_dot
     
-    
-    
