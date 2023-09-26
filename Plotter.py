@@ -17,8 +17,8 @@ class PlotSimResults:
         array = np.linspace(0, maximum, 25)
         x_max = np.amax(qs[0,:])
         z_max = np.amax(qs[1,:])
-        x_array = np.linspace(0, x_max, int(maximum/5))
-        z_array = np.linspace(0, z_max, int(maximum/5))
+        x_array = np.linspace(0, x_max, 10) #int(maximum/5))
+        z_array = np.linspace(0, z_max, 10) #int(maximum/5))
         p_x, p_z, V_x, V_z = self.createGrid(x_array,z_array)
         for i in range(p_x.shape[0]):
             for j in range(p_x.shape[1]):
@@ -109,7 +109,7 @@ class PlotPassiveSimResults(PlotSimResults):
         super().__init__(planner, controller, robot)
 
     def plotVelocityTracking(self, fig, ax, ts, q_T_dots, q_r_dots, Vs):
-        # fig, ax = super().plotVelocityTracking(fig, ax, ts, q_T_dots, Vs)
+        fig, ax = super().plotVelocityTracking(fig, ax, ts, q_T_dots, Vs)
         q_bar_dots = np.vstack((q_T_dots, q_r_dots))
         m_bar = np.array([[self.robot.dynamics.m, 0, 0], [0, self.robot.dynamics.m, 0], [0, 0, self.controller.m_r]])
         K_bar = np.concatenate([0.5*q_bar_dot.T@m_bar@q_bar_dot for q_bar_dot in q_bar_dots.T[:,:,None]])
