@@ -115,25 +115,22 @@ def plotResults(planner, controller, robot, ts, us, Fs, F_rs, f_es, qs, q_dots, 
         plotter = plot_augmented_results(planner, controller, robot, ts, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs)
     else: plotter = plot_results(planner, controller, robot, ts, q_dots, Vs)
     plot_sim_summary(plotter, robot_type, ts, us, qs)
-    
     plt.show()
 
 def runVizVelocityField():
     planner = UpRampVelocityField(params.base_AM_planner_params(), params.base_up_ramp_planner_params(), params.up_ramp_planner_params(), visualize=True)
     plotter = VizVelocityField(planner)
-    # plot
-    fig, ax = plt.subplots(1, 1, figsize=(16,9), sharex=True)
-    # make test arrays of states
+    fig, ax = create_fig(1, 1)
     z_T = np.linspace(0, 1, 10)
     x_T = np.linspace(0, 4, 20) 
     plotter.plotRamp(fig, ax, x_T, color='black')
     plotter.plotVelocityField(fig, ax, x_T, z_T)
     plt.show()
 
-
 if __name__ == '__main__':
-    robot_type: RobotType = RobotType.AM  
+    robot_type: RobotType = RobotType.AM 
     planner_type: PlannerType = PlannerType.RAMP
     controller_type: ControllerType = ControllerType.PVFC  
     runSim(robot_type=robot_type, planner_type=planner_type, controller_type=controller_type, sim_time=60, plot=True)  
     # runVizVelocityField()
+    # TODO catch inconsistent combinations of robot, planner, and controller
