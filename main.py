@@ -57,6 +57,7 @@ def createController(controller: ControllerType, robot_params: namedtuple) -> Ba
     return controller_class(robot_params, params.attitude_control_params(), *args)
 
 def runSim(robot_type=RobotType.AM, planner_type=PlannerType.RAMP, controller_type=ControllerType.PVFC, sim_time=10, dt=0.01, plot=True):
+    if robot_type==RobotType.QUAD and planner_type==PlannerType.RAMP: raise ValueError('Quadrotor cannot interact with the ramp, choose a differnt planner.')
     # create modules
     robot, robot_params, q_0, q_dot_0 = createRobot(robot_type)
     planner = createPlanner(planner_type, robot_type)
@@ -128,7 +129,7 @@ def runVizVelocityField():
     plt.show()
 
 if __name__ == '__main__':
-    robot_type: RobotType = RobotType.AM 
+    robot_type: RobotType = RobotType.QUAD
     planner_type: PlannerType = PlannerType.RAMP
     controller_type: ControllerType = ControllerType.PVFC  
     runSim(robot_type=robot_type, planner_type=planner_type, controller_type=controller_type, sim_time=60, plot=True)  
