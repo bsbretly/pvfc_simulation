@@ -6,7 +6,8 @@ import matplotlib.style
 def setupPlotParams():
     # https://matplotlib.org/3.1.1/gallery/style_sheets/style_sheets_reference.html
     # mpl.rcParams['text.usetex'] = True
-    mpl.style.use('seaborn-poster')
+    # mpl.style.use('seaborn-poster')  # seems to only work on linux
+    mpl.style.use('seaborn-v0_8-poster')
 
     mpl.rcParams['axes.grid'] = True
     mpl.rcParams['grid.color'] = 'k'

@@ -10,18 +10,18 @@ import numpy as np
 from enum import Enum
 
 class RobotType(Enum):
-    AM = 'AM'
-    QUAD = 'quad'
+    AM = 'AerialManipulator'
+    QUAD = 'Quadrotor'
 
 class PlannerType(Enum):
-    POINT = 'point'
-    HORIZONTAL = 'horizontal'
-    RAMP = 'ramp'
+    POINT = 'PointVelocityField'
+    HORIZONTAL = 'HorinzontalLineVelocityField'
+    RAMP = 'UpRampVelocityField'
 
 class ControllerType(Enum):
     PVFC = 'PVFC'
-    PDCONTROL = 'PDControl'
-    AUGMENTEDPDCONTROL = 'AugmentedPDControl'
+    PD = 'PDControl'
+    AUGMENTEDPD = 'AugmentedPDControl'
 
 def createRobot(robot: RobotType) -> Robot:
     robots = {
@@ -50,8 +50,8 @@ def createPlanner(plan: PlannerType, robot: RobotType) -> VelocityPlanner:
 def createController(controller: ControllerType, robot_params: namedtuple) -> BaseControl:
     controllers = {
         ControllerType.PVFC: (PVFC, params.passive_params()),
-        ControllerType.PDCONTROL: (PDControl, params.pd_params()),
-        ControllerType.AUGMENTEDPDCONTROL: (AugmentedPDControl, params.passive_params(), params.pd_params())
+        ControllerType.PD: (PDControl, params.pd_params()),
+        ControllerType.AUGMENTEDPD: (AugmentedPDControl, params.passive_params(), params.pd_params())
     }
     controller_class, *args = controllers.get(controller)
     return controller_class(robot_params, params.attitude_control_params(), *args)
@@ -69,36 +69,53 @@ def runSim(robot_type=RobotType.AM, planner_type=PlannerType.RAMP, controller_ty
 
 def getTaskSpaceState(q, q_dot, tool_length):
     q_T, q_T_dot = zip(*[util.configToTask(q_i, q_dot_i, tool_length) for q_i, q_dot_i in zip(q.T[:,:,None], q_dot.T[:,:,None])])
-    q_Ts, q_T_dots = np.concatenate(q_T,axis=1), np.concatenate(q_T_dot,axis=1)
-    return q_Ts, q_T_dots
-    
-def plotResults(planner, controller, robot, ts, us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs):
-    #  sim visualization
-    if robot.__class__.__name__=='Quadrotor': q_Ts, q_T_dots = qs[:2,:], q_dots[:2,:]  # working in the translational state of 2D quadrotor
-    else: q_Ts, q_T_dots = getTaskSpaceState(qs, q_dots, robot.dynamics.tool_length)
-    if controller.__class__.__name__ in ['PVFC', 'AugmentedPDControl']:  # augmented plots
-        plotter = PlotPassiveSimResults(planner, controller, robot)
-        
-        fig, ax = plt.subplots(2, 1, figsize=(16,9), sharex=True)
-        plotter.plotPowerAnnihilation(fig, ax, ts, Fs, F_rs, q_T_dots, q_r_dots)
-        
-        fig, ax = plt.subplots(3, 1, figsize=(16,9), sharex=True)
-        plotter.plotPassivity(fig, ax, ts, q_T_dots, q_r_dots, f_es)
-        
-        fig, ax = plt.subplots(2, 1, figsize=(16,9), sharex=True)
-        plotter.plotVelocityTracking(fig, ax, ts, q_T_dots, q_r_dots, Vs)
-    else: 
-        plotter = PlotSimResults(planner, controller, robot)
-        fig, ax = plt.subplots(2, 1, figsize=(16,9), sharex=True)
-        plotter.plotVelocityTracking(fig, ax, ts, q_T_dots, Vs)
+    return np.concatenate(q_T,axis=1), np.concatenate(q_T_dot,axis=1)
 
-    fig, ax = plt.subplots(1, 1, figsize=(16,9), sharex=True)
-    if robot.__class__.__name__=='AerialManipulator':
-        plotter.plotRamp(fig, ax, q_Ts, color='black')
-        plotter.plotTaskState(fig, ax, q_Ts, color='green')
+def create_fig(rows,cols,figsize=(16,9),sharex=True):
+    fig, ax = plt.subplots(rows, cols, figsize=figsize, sharex=sharex)
+    if rows==1 and cols==1: ax = np.array([ax])
+    return fig, ax
+
+def determine_controlled_state(robot_type, qs, q_dots):
+    if robot_type==RobotType.QUAD.value: return qs[:2,:], q_dots[:2,:]  # working in the translational state of 2D quadrotor
+    else: return getTaskSpaceState(qs, q_dots, params.tool_length)
+
+def plot_augmented_results(planner, controller, robot, ts, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs):
+    plotter = PlotPassiveSimResults(planner, controller, robot)
+    fig1, ax1 = create_fig(2, 1)
+    plotter.plotVelocityTracking(fig1, ax1, ts, q_dots, q_r_dots, Vs)
+    
+    fig2, ax2 = create_fig(2, 1)
+    plotter.plotPowerAnnihilation(fig2, ax2, ts, Fs, F_rs, q_dots, q_r_dots)
+    
+    fig3, ax3 = create_fig(3, 1)
+    plotter.plotPassivity(fig3, ax3, ts, q_dots, q_r_dots, f_es)
+    return plotter
+
+def plot_results(planner, controller, robot, ts, q_dots, Vs):
+    plotter = PlotSimResults(planner, controller, robot)
+    fig1, ax1 = create_fig(2, 1)
+    plotter.plotVelocityTracking(fig1, ax1, ts, q_dots, Vs)
+    return plotter
+
+def plot_sim_summary(plotter, robot_type, ts, us, qs):
+    fig, ax = create_fig(1, 1)
+    if robot_type==RobotType.AM.value:
+        plotter.plotRamp(fig, ax, qs, color='black')
+        plotter.plotTaskState(fig, ax, qs, color='green')
     plotter.plotVelocityField(fig, ax, qs)
     plotter.plotRobot(fig, ax, ts, qs, us, num=8)
     plotter.plotConfigState(fig, ax, qs, color='blue')
+
+def plotResults(planner, controller, robot, ts, us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs):
+    robot_type = robot.__class__.__name__
+    controller_type = controller.__class__.__name__
+    q, q_dots = determine_controlled_state(robot_type, qs, q_dots)
+    if controller_type in [ControllerType.PVFC.value, ControllerType.AUGMENTEDPD.value]: 
+        plotter = plot_augmented_results(planner, controller, robot, ts, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs)
+    else: plotter = plot_results(planner, controller, robot, ts, q_dots, Vs)
+    plot_sim_summary(plotter, robot_type, ts, us, qs)
+    
     plt.show()
 
 def runVizVelocityField():
@@ -115,10 +132,8 @@ def runVizVelocityField():
 
 
 if __name__ == '__main__':
-    # Choose which sim to run, sims are in 2D (x, z) plane
     robot_type: RobotType = RobotType.AM  
-    planner_type = PlannerType.RAMP
-    controller_type = ControllerType.PVFC  
-    robot, planner, controller, ts, us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs = \
-        runSim(robot_type=robot_type, planner_type=planner_type, controller_type=controller_type, sim_time=60, plot=True)  
+    planner_type: PlannerType = PlannerType.RAMP
+    controller_type: ControllerType = ControllerType.PVFC  
+    runSim(robot_type=robot_type, planner_type=planner_type, controller_type=controller_type, sim_time=60, plot=True)  
     # runVizVelocityField()
