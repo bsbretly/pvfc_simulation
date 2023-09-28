@@ -8,7 +8,7 @@ class Sim:
         self.robot = robot
         if ramp_force_params is not None: self.ramp_k, self.ramp_mu = ramp_force_params 
         
-    def run(self, q, q_dot, q_r, q_r_dot, f_e, sim_time=10, dt=0.001):
+    def run(self, q, q_dot, q_r, q_r_dot, sim_time=10, dt=0.001):
         us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs, V_dots = ([] for i in range(9))
         ts = np.arange(0, sim_time, dt)
         for t in ts:

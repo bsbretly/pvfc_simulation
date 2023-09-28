@@ -1,11 +1,12 @@
 import numpy as np
 import utilities as util
 from Dynamics import QuadrotorDynamics, AerialManipulatorDynamics
+from params import quadrotor_params, AM_params
 
 class Robot:
     def __init__(self, robot_parameters):
-        if type(robot_parameters).__name__ == 'quadrotor_params': self.dynamics = QuadrotorDynamics(robot_parameters)
-        elif type(robot_parameters).__name__ == 'AM_params': self.dynamics = AerialManipulatorDynamics(robot_parameters)
+        if isinstance(robot_parameters, quadrotor_params): self.dynamics = QuadrotorDynamics(robot_parameters)
+        elif isinstance(robot_parameters, AM_params): self.dynamics = AerialManipulatorDynamics(robot_parameters)
         else: raise NotImplementedError("Robot parameters not implemented for the robot.")
 
     def step(self, q, q_dot, u, F_e, dt):

@@ -1,6 +1,7 @@
 import numpy as np
 import sympy as sp
 import utilities as util
+from params import base_quad_planner_params, base_AM_planner_params
 DEG_TO_RAD = np.pi/180
 RAD_TO_DEG = 1/DEG_TO_RAD
 
@@ -8,10 +9,10 @@ RAD_TO_DEG = 1/DEG_TO_RAD
 class VelocityPlanner: 
     def __init__(self, base_robot_planner_params, base_planner_params, planner_params, visualize=False):
         self.visualize = visualize
-        if type(base_robot_planner_params).__name__ == 'base_quad_planner_params': 
+        if isinstance(base_robot_planner_params, base_quad_planner_params): 
             self.task_space = False
             self.m, self.m_r, self.E_bar = base_robot_planner_params
-        elif type(base_robot_planner_params).__name__ == 'base_AM_planner_params': 
+        elif isinstance(base_robot_planner_params, base_AM_planner_params): 
             self.task_space = True
             self.m, self.m_r, self.tool_length, self.E_bar = base_robot_planner_params
         else: raise NotImplementedError("Planner parameters not implemented.")

@@ -43,7 +43,7 @@ class PlotSimResults:
         ax[0].plot(qs[0,:], qs[1,:], color=color, linestyle=linestyle)
 
     def display(self, fig, ax, q, max_x):
-        if self.robot.__class__.__name__ == 'AerialManipulator': 
+        if self.robot.__class__.__name__ == util.RobotInfo.AM.value.robot_type: 
             x, z, theta, Beta = q[0], q[1], q[2], q[3]
             q_T, _ = util.configToTask(q, np.zeros_like(q), self.robot.dynamics.tool_length)
             ax[0].plot([x, q_T[0]], [z, q_T[1]], 'green')  # plot tool
@@ -53,8 +53,9 @@ class PlotSimResults:
         ax[0].plot(x, z, 'bo', label='quadrotor')
         quad_x = [x-wing_span*np.cos(-theta), x+wing_span*np.cos(-theta)]
         quad_z = [z-wing_span*np.sin(-theta), z+wing_span*np.sin(-theta)]
+
         ax[0].plot(quad_x, quad_z, 'blue')
-        ax[0].set_xlabel(r'$x\ [s]$')
+        ax[0].set_xlabel(r'$x\ [m]$')
         ax[0].set_ylabel(r'$z\ [m]$')
         return fig, ax
 
@@ -98,7 +99,7 @@ class PlotSimResults:
         for i in idxs:
             self.display(fig, ax, qs[:,i:i+1], max_x)
         quad = mlines.Line2D([], [], color='blue', marker='o', linestyle='-', markersize=5, label='quadrotor')
-        if self.robot.__class__.__name__=='AerialManipulator':
+        if self.robot.__class__.__name__==util.RobotInfo.AM.value.robot_type:
             tool = mlines.Line2D([], [], color='green', marker='o', linestyle='None', markersize=5, label='tool tip')
             ax[0].legend(handles=[quad, tool])
         else: ax[0].legend(handles=[quad])
@@ -235,7 +236,7 @@ class VizVelocityField(PlotSimResults):
                 V_x[i,j] = V[0]
                 V_z[i,j] = V[1]
         ax[0].quiver(p_x, p_z, V_x, V_z, color='k', pivot='middle', alpha=0.3, angles='xy', scale_units='xy', scale=50, width=0.0005*x_max)
-        ax[0].set_xlabel(r'$x\ [s]$')
+        ax[0].set_xlabel(r'$x\ [m]$')
         ax[0].set_ylabel(r'$z\ [m]$')
         return fig, ax
     

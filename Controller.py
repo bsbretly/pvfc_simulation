@@ -1,12 +1,12 @@
 import numpy as np
 import utilities as util
 from Dynamics import QuadrotorTranslationalDynamics, AerialManipulatorTaskDynamics
-
+from params import quadrotor_params, AM_params
 
 class BaseControl:
     def __init__(self, robot_params, attitude_control_params):
-        if type(robot_params).__name__ == 'quadrotor_params': self.dynamics = QuadrotorTranslationalDynamics(robot_params)
-        elif type(robot_params).__name__ == 'AM_params': self.dynamics = AerialManipulatorTaskDynamics(robot_params)
+        if isinstance(robot_params, quadrotor_params): self.dynamics = QuadrotorTranslationalDynamics(robot_params)
+        elif isinstance(robot_params, AM_params): self.dynamics = AerialManipulatorTaskDynamics(robot_params)
         else: raise NotImplementedError("Robot parameters not implemented for the controller.")
         self.theta_K_p, self.theta_K_d = attitude_control_params
 
@@ -52,13 +52,13 @@ class BaseControl:
     
     def step(self, q, q_dot, q_r, q_r_dot, V_bar, V_bar_dot, dt):
         M, C = self.computeDynamics(q, q_dot)
-        if self.dynamics.__class__.__name__==('AerialManipulatorTaskDynamics'):  # task space
+        if self.dynamics.__class__.__name__==util.RobotInfo.AM.value.dynamics_type:  # AM in task space
             _, q_T_dot = util.configToTask(q, q_dot, self.dynamics.tool_length)
             F_T, f_r, q_r, q_r_dot = self.computeControlAction(q_T_dot, q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt)
             F = self.computeConfigForceControl(q, q_dot, F_T)
             u = self.computeAttitudeControl(q, q_dot, F, task_space=True)
             return u, F_T, f_r, q_r, q_r_dot
-        elif self.dynamics.__class__.__name__==('QuadrotorTranslationalDynamics'):  # configuration space
+        elif self.dynamics.__class__.__name__==util.RobotInfo.QUAD.value.dynamics_type:  # quad in configuration space
             F, f_r, q_r, q_r_dot = self.computeControlAction(q_dot[:-1,:], q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt)
             u = self.computeAttitudeControl(q, q_dot, F, task_space=False)
             return u, F, f_r, q_r, q_r_dot

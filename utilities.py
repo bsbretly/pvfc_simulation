@@ -1,5 +1,22 @@
 import numpy as np
+from enum import Enum
+from collections import namedtuple
 
+RobotData = namedtuple('RobotData', ['robot_type', 'dynamics_type'])
+
+class RobotInfo(Enum):
+    QUAD = RobotData('Quadrotor', 'QuadrotorTranslationalDynamics')
+    AM = RobotData('AerialManipulator', 'AerialManipulatorTaskDynamics')
+    
+class PlannerInfo(Enum):
+    POINT = 'PointVelocityField'
+    HORIZONTAL = 'HorinzontalLineVelocityField'
+    RAMP = 'UpRampVelocityField'
+
+class ControllerInfo(Enum):
+    PVFC = 'PVFC'
+    PD = 'PDControl'
+    AUGMENTEDPD = 'AugmentedPDControl'
 
 def computeRampParams(p1, p2):
     '''
