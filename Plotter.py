@@ -42,19 +42,17 @@ class PlotSimResults:
     def plotConfigState(self, fig, ax, qs, color='blue', linestyle='--'):
         ax[0].plot(qs[0,:], qs[1,:], color=color, linestyle=linestyle)
 
-    def display(self, fig, ax, q, max_x):
+    def display(self, fig, ax, q, q_T, max_x):
         if self.robot.__class__.__name__ == util.RobotInfo.AM.value.robot_type: 
             x, z, theta, Beta = q[0], q[1], q[2], q[3]
-            q_T, _ = util.configToTask(q, np.zeros_like(q), self.robot.dynamics.tool_length)
             ax[0].plot([x, q_T[0]], [z, q_T[1]], 'green')  # plot tool
             ax[0].plot(q_T[0], q_T[1], 'go', label='tool tip')  # plot end-effector
         else: x, z, theta = q[0], q[1], q[2]
         wing_span = 0.05*max_x
-        ax[0].plot(x, z, 'bo', label='quadrotor')
+        ax[0].plot(x, z, 'bo', label='quadrotor')  # quad CoM
         quad_x = [x-wing_span*np.cos(-theta), x+wing_span*np.cos(-theta)]
         quad_z = [z-wing_span*np.sin(-theta), z+wing_span*np.sin(-theta)]
-
-        ax[0].plot(quad_x, quad_z, 'blue')
+        ax[0].plot(quad_x, quad_z, 'blue')  # quad wings
         ax[0].set_xlabel(r'$x\ [m]$')
         ax[0].set_ylabel(r'$z\ [m]$')
         return fig, ax
@@ -93,11 +91,11 @@ class PlotSimResults:
     def plotTaskState(self, fig, ax, q_Ts, color='r', linestyle='--'):
         ax[0].plot(q_Ts[0,:], q_Ts[1,:], color=color, linestyle=linestyle)
     
-    def plotRobot(self, fig, ax, ts, qs, us, num=8):
+    def plotRobot(self, fig, ax, ts, qs, q_Ts, us, num=8):
         idxs = np.rint(np.linspace(0, len(ts)-1, num)).astype(int)
         max_x = max(qs[0])
         for i in idxs:
-            self.display(fig, ax, qs[:,i:i+1], max_x)
+            self.display(fig, ax, qs[:,i:i+1], q_Ts[:,i:i+1], max_x)  # display takes configuration state
         quad = mlines.Line2D([], [], color='blue', marker='o', linestyle='-', markersize=5, label='quadrotor')
         if self.robot.__class__.__name__==util.RobotInfo.AM.value.robot_type:
             tool = mlines.Line2D([], [], color='green', marker='o', linestyle='None', markersize=5, label='tool tip')

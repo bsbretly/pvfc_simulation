@@ -66,11 +66,13 @@ def create_fig(rows,cols,figsize=(16,9),sharex=True):
     if rows==1 and cols==1: ax = np.array([ax])
     return fig, ax
 
-def determine_controlled_state(robot_type, qs, q_dots):
-    if robot_type==util.RobotInfo.QUAD.value.robot_type: return qs[:2,:], q_dots[:2,:]  # working in the translational state of 2D quadrotor
-    else: return get_task_space_state(qs, q_dots, params.tool_length)
-
-def plot_augmented_sim_results(planner, controller, robot, ts, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs):
+def get_config_and_task_state(robot_type, qs, q_dots):
+    if robot_type==util.RobotInfo.QUAD.value.robot_type: return qs[:2,:], q_dots[:2,:], np.zeros_like(qs[:2,:]), np.zeros_like(qs[:2,:])
+    else: 
+        q_Ts, q_T_dots = get_task_space_state(qs, q_dots, params.tool_length)
+        return qs, q_dots, q_Ts, q_T_dots
+    
+def plot_augmented_sim_results(planner, controller, robot, ts, Fs, F_rs, f_es, q_dots, q_r_dots, Vs):
     plotter = PlotPassiveSimResults(planner, controller, robot)
     fig1, ax1 = create_fig(2, 1)
     plotter.plotVelocityTracking(fig1, ax1, ts, q_dots, q_r_dots, Vs)
@@ -88,24 +90,25 @@ def plot_sim_results(planner, controller, robot, ts, q_dots, Vs):
     plotter.plotVelocityTracking(fig1, ax1, ts, q_dots, Vs)
     return plotter
 
-def plot_sim_summary(plotter, planner_type, ts, us, qs):
+def plot_sim_summary(plotter, planner_type, ts, us, qs, q_Ts):
     fig, ax = create_fig(1, 1)
     if planner_type==util.PlannerInfo.RAMP.value:
-        plotter.plotRamp(fig, ax, qs, color='black')
-        plotter.plotTaskState(fig, ax, qs, color='green')
-    plotter.plotVelocityField(fig, ax, qs)
-    plotter.plotRobot(fig, ax, ts, qs, us, num=8)
+        plotter.plotRamp(fig, ax, q_Ts, color='black')
+        plotter.plotTaskState(fig, ax, q_Ts, color='green')
+    if robot_type==util.RobotInfo.AM.value.robot_type: plotter.plotVelocityField(fig, ax, q_Ts)
+    else: plotter.plotVelocityField(fig, ax, qs)
+    plotter.plotRobot(fig, ax, ts, qs, q_Ts, us, num=8)
     plotter.plotConfigState(fig, ax, qs, color='blue')
 
 def plot_results(planner, controller, robot, ts, us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs):
     robot_type = robot.__class__.__name__
     controller_type = controller.__class__.__name__
     planner_type = planner.__class__.__name__
-    q, q_dots = determine_controlled_state(robot_type, qs, q_dots)
+    qs, q_dots, q_Ts, q_T_dots = get_config_and_task_state(robot_type, qs, q_dots)
     if controller_type in [util.ControllerInfo.PVFC.value, util.ControllerInfo.AUGMENTEDPD.value]: 
-        plotter = plot_augmented_sim_results(planner, controller, robot, ts, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs)
-    else: plotter = plot_sim_results(planner, controller, robot, ts, q_dots, Vs)
-    plot_sim_summary(plotter, planner_type, ts, us, qs)
+        plotter = plot_augmented_sim_results(planner, controller, robot, ts, Fs, F_rs, f_es, q_T_dots, q_r_dots, Vs)
+    else: plotter = plot_sim_results(planner, controller, robot, ts, q_T_dots, Vs)
+    plot_sim_summary(plotter, planner_type, ts, us, qs, q_Ts)
     plt.show()
 
 def run_velocity_field_viz():
@@ -118,10 +121,10 @@ def run_velocity_field_viz():
     plotter.plotVelocityField(fig, ax, x_T, z_T)
     plt.show()
 
+
 if __name__ == '__main__':
     robot_type: util.RobotInfo = util.RobotInfo.AM
-    planner_type: util.PlannerInfo = util.PlannerInfo.HORIZONTAL
-    controller_type: util.ControllerInfo = util.ControllerInfo.AUGMENTEDPD
-    check_module_compatiblity(robot_type, planner_type)
+    planner_type: util.PlannerInfo = util.PlannerInfo.RAMP
+    controller_type: util.ControllerInfo = util.ControllerInfo.PVFC
     run_sim(robot_type=robot_type, planner_type=planner_type, controller_type=controller_type, sim_time=60, plot=True)  
     # run_velocity_field_viz()
