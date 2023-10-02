@@ -3,15 +3,14 @@ import utilities as util
 
 class QuadrotorDynamics:
     def __init__(self, robot_parameters, g=9.81):
-        self.m, self.I = robot_parameters
+        self.m_total, self.I = robot_parameters
         self.g = g
-        self.m_total = self.m
     def computeDynamics(self, q, q_dot):
-        M = np.array([[self.m, 0, 0], 
-                [0, self.m, 0], 
+        M = np.array([[self.m_total, 0, 0], 
+                [0, self.m_total, 0], 
                 [0, 0, self.I]])
         C = np.zeros((3,3))
-        G = np.array([[0], [self.m*self.g], [0]])
+        G = np.array([[0], [self.m_total*self.g], [0]])
         B = np.array([[np.sin(q[-1,0]), 0],
             [np.cos(q[-1,0]), 0],
             [0, 1]])
@@ -27,6 +26,7 @@ class QuadrotorTranslationalDynamics(QuadrotorDynamics):
         M_trans = M[:2,:2]
         C_trans = C[:2,:2]
         return M_trans, C_trans
+
 
 class AerialManipulatorDynamics:
     def __init__(self, robot_parameters, g=9.81):

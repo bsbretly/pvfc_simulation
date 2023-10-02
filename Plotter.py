@@ -101,17 +101,18 @@ class PlotSimResults:
             tool = mlines.Line2D([], [], color='green', marker='o', linestyle='None', markersize=5, label='tool tip')
             ax[0].legend(handles=[quad, tool])
         else: ax[0].legend(handles=[quad])
-
-
+    
+    
 class PlotPassiveSimResults(PlotSimResults):
     def __init__(self, planner, controller, robot):
+        if robot.__class__.__name__==util.RobotInfo.AM.value.robot_type: self.m = robot.dynamics.m_t  # task space
+        elif robot.__class__.__name__==util.RobotInfo.QUAD.value.robot_type: self.m = robot.dynamics.m_total  # configuration space
+        else: raise NotImplementedError("Unknown robot class in Plotter!")
         super().__init__(planner, controller, robot)
 
-    def plotVelocityTracking(self, fig, ax, ts, q_T_dots, q_r_dots, Vs):
+    def plotVelocityTracking(self, fig, ax, ts, qs, q_dots, q_T_dots, q_r_dots, Vs):
         fig, ax = super().plotVelocityTracking(fig, ax, ts, q_T_dots, Vs)
-        q_bar_dots = np.vstack((q_T_dots, q_r_dots))
-        m_bar = np.array([[self.robot.dynamics.m, 0, 0], [0, self.robot.dynamics.m, 0], [0, 0, self.controller.m_r]])
-        K_bar = np.concatenate([0.5*q_bar_dot.T@m_bar@q_bar_dot for q_bar_dot in q_bar_dots.T[:,:,None]])
+        K_bar = self.compute_vectorized_kinetic_energy(qs, q_dots, q_T_dots, q_r_dots)[-1]
         Beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
         ax[0].plot(ts, Beta*Vs[0,:], 'r--', label=r'$\beta V_x$')  # plot Beta velocity tracking
         ax[1].plot(ts, Beta*Vs[1,:], 'r--', label=r'$\beta V_z$')
@@ -119,17 +120,12 @@ class PlotPassiveSimResults(PlotSimResults):
         ax[1].legend()
         return fig, ax
     
-    def plotPassivity(self, fig, ax, ts, q_T_dots, q_r_dots, f_es):
+    def plotPassivity(self, fig, ax, ts, qs, q_dots, q_Ts, q_T_dots, q_r_dots, f_es):
         for i in range(2):
             ax[0].plot(ts, f_es[i])
         ax[0].legend([r'$\tilde{f}_{e,x}$', r'$\tilde{f}_{e,z}$'], loc='lower right')
         ax[0].set_ylabel(r'$[N]$')
-        q_bar_dots = np.vstack((q_T_dots, q_r_dots))
-        m_bar = np.array([[self.robot.dynamics.m, 0, 0], [0, self.robot.dynamics.m, 0], [0, 0, self.controller.m_r]])
-        m = np.array([[self.robot.dynamics.m, 0], [0, self.robot.dynamics.m]])
-        K = np.concatenate([0.5*q_T_dot.T@m@q_T_dot for q_T_dot in q_T_dots.T[:,:,None]])
-        K_r = np.array([0.5*self.controller.m_r*q_r_dot**2 for q_r_dot in q_r_dots])
-        K_bar = np.concatenate([0.5*q_bar_dot.T@m_bar@q_bar_dot for q_bar_dot in q_bar_dots.T[:,:,None]])
+        K, K_r, K_bar = self.compute_vectorized_kinetic_energy(qs, q_dots, q_T_dots, q_r_dots)
         K_bar_dot = np.gradient(K_bar.squeeze(), ts)
         f_e_power =  np.array([q_T_dots[:,i].reshape(-1,1).T@f_es[:,i].reshape(-1,1) for i in range(q_T_dots.shape[1])]).squeeze()
 
@@ -169,8 +165,8 @@ class PlotPassiveSimResults(PlotSimResults):
     
     def plotEbarPassivity(self, E_bars):
         fig, ax = plt.subplots(2, 1, figsize=(16,9), sharex=True)
-        m_bar = np.array([[self.robot.dynamics.m, 0, 0], [0, self.robot.dynamics.m, 0], [0, 0, self.controller.m_r]])
-        m = np.array([[self.robot.dynamics.m, 0], [0, self.robot.dynamics.m]])
+        m_bar = np.array([[self.m, 0, 0], [0, self.m, 0], [0, 0, self.controller.m_r]])
+        m = np.array([[self.m, 0], [0, self.m]])
 
         for i in range(len(E_bars)):
             q_bar_dots = np.vstack((self.q_T_dots[i], self.q_r_dots[i]))
@@ -201,7 +197,7 @@ class PlotPassiveSimResults(PlotSimResults):
         return fig, ax
     
     def plotPowerAnnihilation(self, fig, ax, ts, Fs, F_rs, q_T_dots, q_r_dots):
-        f_power =  np.array([q_T_dots[:,i].reshape(-1,1).T@Fs[:,i].reshape(-1,1) for i in range(q_T_dots.shape[1])]).squeeze()
+        f_power =  np.array([q_T_dots[:,i:i+1].T@Fs[:,i:i+1] for i in range(q_T_dots.shape[1])]).squeeze()
         f_r_power = np.array(q_r_dots)*np.array(F_rs)
 
         ax[0].plot(ts, f_r_power, label=r'$x_r f_r$')
@@ -218,7 +214,50 @@ class PlotPassiveSimResults(PlotSimResults):
         plt.suptitle(r'$\text{Power Annihilation}$')
         return fig, ax
     
+    def compute_vectorized_kinetic_energy(self, qs, q_dots, q_T_dots, q_r_dots):
+        cols = qs.shape[1]
+        q_bar_dots = np.vstack((q_T_dots, q_r_dots))
+        M_bar = [self.controller.computeDynamics(qs[:, i:i+1], q_dots[:, i:i+1])[0] for i in range(cols)]
+        K = [0.5 * q_T_dots[:, i:i+1].T @ M_i[:-1,:-1] @ q_T_dots[:, i:i+1] for i, M_i in enumerate(M_bar)]
+        K_r = [0.5*M_i[-1,-1]*q_r_dots[i]**2 for i, M_i in enumerate(M_bar)]
+        K_bar = [0.5 * q_bar_dots[:, i:i+1].T @ M_i @ q_bar_dots[:, i:i+1] for i, M_i in enumerate(M_bar)]
+        return np.squeeze(K), np.squeeze(K_r), np.squeeze(K_bar)
     
+
+class TrackingPerformanceComparo(PlotPassiveSimResults):
+    def __init__(self, robot):
+        self.robot = robot
+        fp.setupPlotParams()
+        
+    def plot_tracking_performance(self, fig, ax, sim_data):
+        M, C, G, B = {}, {}, {}, {}
+        line_style = ['-', '-', '--']
+        for controller in util.ControllerInfo:
+            # [qs[i], qdots[i]] = np.split(sim_data[i], 2, axis=1)
+            # V_ds[i] = np.array([self.planner.computeVelocityField(q) for q in qs[i]]).squeeze()
+            # errors[i] = qdots[i][:,:3] - V_ds[i][:,:3]
+            # peak_xs[i], peak_values[i] = self.find_peaks(times, errors[i][:,0])
+            Vs = sim_data['V'][controller][:-1,:]
+            errors = sim_data['q_T_dot'] - Vs
+            if controller in [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]:
+                # Ms, Cs, Gs, Bs = [self.robot.dynamics.computeDynamics(q, q_dot) for q, q_dot in zip(sim_data['q'][controller], sim_data['q_dot'][controller])]
+                # results = [self.robot.dynamics.computeDynamics(sim_data['q'][controller][:, i], sim_data['q_dot'][controller][:, i]) for i in range(sim_data['q'][controller].shape[1])]
+                K_bar = self.compute_vectorized_kbar(sim_data['q'][controller], sim_data['q_dot'][controller], sim_data['q_r_dot'][controller])
+                Ms, Cs, Gs, Bs = zip(*[self.robot.dynamics.computeDynamics(sim_data['q'][controller][:, i:i+1], sim_data['q_dot'][controller][:, i:i+1]) for i in range(sim_data['q'][controller].shape[1])])
+                q_bar_dots = np.vstack((sim_data['q_dot'][controller], sim_data['q_r_dot'][controller]))
+                K_bar = [0.5*q_bar_dots[i].T@Ms[i]@q_bar_dots[i] for i in range(sim_data['q'][controller].shape[1])]
+                beta = np.sqrt(K_bar/E_bars[i]).squeeze()
+                e_bar_beta = q_bar_dots - beta*self.Vs[i]
+
+            ax[0].plot(sim_data['t'][controller], errors, label=r'$' + controller.name + r'$', linestyle=line_style[i])#r'$' + dims[0] + r'_{pvfc}$')
+        ax[0].set_ylabel(r'$e_{' + dims[0] + r'}\ [m]$', fontsize=30)
+        ax[0].legend()
+        ax[0].set_xlabel(r'$t\ [s]$', fontsize=30)
+        plt.tight_layout()
+        plt.xlim(0,np.rint(times[-1]))
+        plt.savefig('plots/control_comparison', bbox_inches = 'tight', pad_inches = 0, dpi=1000)
+
+
 class VizVelocityField(PlotSimResults):
     def __init__(self, planner):
         self.planner = planner
