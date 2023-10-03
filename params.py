@@ -31,7 +31,7 @@ ramp_force_params = namedtuple('ramp_force_params', ['ramp_k', 'ramp_mu'], defau
 # Planner parameters
 point_normal_gain, point_tangent_gain = 1., 1.
 z_intercept = 0.
-horizontal_normal_gain, horizontal_tangent_gain = 1., 10.
+horizontal_normal_gain, horizontal_tangent_gain = 1., 4.
 up_ramp_normal_gain, up_ramp_tangent_gain = 1., 1.
 p1, p2 = [0.,0.], [5.,.25] # two points on the ramp
 delta = 0.1 # distance "beyond" surface to facilitate interaction [m]

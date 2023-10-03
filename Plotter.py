@@ -42,16 +42,18 @@ class PlotSimResults:
     def plotConfigState(self, fig, ax, qs, color='blue', linestyle='--'):
         ax[0].plot(qs[0,:], qs[1,:], color=color, linestyle=linestyle)
 
-    def display(self, fig, ax, q, q_T, max_x):
+    def display(self, fig, ax, q, q_T, max_x, max_z):
         if self.robot.__class__.__name__ == util.RobotInfo.AM.value.robot_type: 
             x, z, theta, Beta = q[0], q[1], q[2], q[3]
             ax[0].plot([x, q_T[0]], [z, q_T[1]], 'green')  # plot tool
             ax[0].plot(q_T[0], q_T[1], 'go', label='tool tip')  # plot end-effector
         else: x, z, theta = q[0], q[1], q[2]
-        wing_span = 0.05*max_x
         ax[0].plot(x, z, 'bo', label='quadrotor')  # quad CoM
-        quad_x = [x-wing_span*np.cos(-theta), x+wing_span*np.cos(-theta)]
-        quad_z = [z-wing_span*np.sin(-theta), z+wing_span*np.sin(-theta)]
+        r = 0.05*max_x
+        dx = r*np.cos(-theta)
+        dz = r*np.sin(-theta)
+        quad_x = [x-dx, x+dx]
+        quad_z = [z-dz, z+dz]
         ax[0].plot(quad_x, quad_z, 'blue')  # quad wings
         ax[0].set_xlabel(r'$x\ [m]$')
         ax[0].set_ylabel(r'$z\ [m]$')
@@ -93,9 +95,9 @@ class PlotSimResults:
     
     def plotRobot(self, fig, ax, ts, qs, q_Ts, us, num=8):
         idxs = np.rint(np.linspace(0, len(ts)-1, num)).astype(int)
-        max_x = max(qs[0])
+        max_x, max_z = max(qs[0]), max(qs[1])
         for i in idxs:
-            self.display(fig, ax, qs[:,i:i+1], q_Ts[:,i:i+1], max_x)  # display takes configuration state
+            self.display(fig, ax, qs[:,i:i+1], q_Ts[:,i:i+1], max_x, max_z)  # display takes configuration state
         quad = mlines.Line2D([], [], color='blue', marker='o', linestyle='-', markersize=5, label='quadrotor')
         if self.robot.__class__.__name__==util.RobotInfo.AM.value.robot_type:
             tool = mlines.Line2D([], [], color='green', marker='o', linestyle='None', markersize=5, label='tool tip')
@@ -113,9 +115,9 @@ class PlotPassiveSimResults(PlotSimResults):
     def plotVelocityTracking(self, fig, ax, ts, qs, q_dots, q_T_dots, q_r_dots, Vs):
         fig, ax = super().plotVelocityTracking(fig, ax, ts, q_T_dots, Vs)
         K_bar = self.compute_vectorized_kinetic_energy(qs, q_dots, q_T_dots, q_r_dots)[-1]
-        Beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
-        ax[0].plot(ts, Beta*Vs[0,:], 'r--', label=r'$\beta V_x$')  # plot Beta velocity tracking
-        ax[1].plot(ts, Beta*Vs[1,:], 'r--', label=r'$\beta V_z$')
+        beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
+        ax[0].plot(ts, beta*Vs[0,:], 'r--', label=r'$\beta V_x$')  # plot Beta velocity tracking
+        ax[1].plot(ts, beta*Vs[1,:], 'r--', label=r'$\beta V_z$')
         ax[0].legend()
         ax[1].legend()
         return fig, ax
@@ -225,37 +227,28 @@ class PlotPassiveSimResults(PlotSimResults):
     
 
 class TrackingPerformanceComparo(PlotPassiveSimResults):
-    def __init__(self, robot):
-        self.robot = robot
+    def __init__(self, controller):
+        self.controller = controller
         fp.setupPlotParams()
         
     def plot_tracking_performance(self, fig, ax, sim_data):
         M, C, G, B = {}, {}, {}, {}
         line_style = ['-', '-', '--']
-        for controller in util.ControllerInfo:
-            # [qs[i], qdots[i]] = np.split(sim_data[i], 2, axis=1)
-            # V_ds[i] = np.array([self.planner.computeVelocityField(q) for q in qs[i]]).squeeze()
-            # errors[i] = qdots[i][:,:3] - V_ds[i][:,:3]
-            # peak_xs[i], peak_values[i] = self.find_peaks(times, errors[i][:,0])
+        for i, controller in enumerate(util.ControllerInfo):
+            if controller in [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]:  # augmented controllers
+                K_bar = self.compute_vectorized_kinetic_energy(sim_data['q'][controller], sim_data['q_dot'][controller], sim_data['q_T_dot'][controller], sim_data['q_r_dot'][controller])[-1]
+                beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
+                q_bar_dots = np.vstack((sim_data['q_T_dot'][controller], sim_data['q_r_dot'][controller]))
+                beta_error = q_bar_dots - beta*sim_data['V'][controller]
+                ax[0].plot(sim_data['t'][controller], beta_error, label=r'$\bar{e}_{' + controller.name + r'}$', linestyle=line_style[i])
             Vs = sim_data['V'][controller][:-1,:]
-            errors = sim_data['q_T_dot'] - Vs
-            if controller in [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]:
-                # Ms, Cs, Gs, Bs = [self.robot.dynamics.computeDynamics(q, q_dot) for q, q_dot in zip(sim_data['q'][controller], sim_data['q_dot'][controller])]
-                # results = [self.robot.dynamics.computeDynamics(sim_data['q'][controller][:, i], sim_data['q_dot'][controller][:, i]) for i in range(sim_data['q'][controller].shape[1])]
-                K_bar = self.compute_vectorized_kbar(sim_data['q'][controller], sim_data['q_dot'][controller], sim_data['q_r_dot'][controller])
-                Ms, Cs, Gs, Bs = zip(*[self.robot.dynamics.computeDynamics(sim_data['q'][controller][:, i:i+1], sim_data['q_dot'][controller][:, i:i+1]) for i in range(sim_data['q'][controller].shape[1])])
-                q_bar_dots = np.vstack((sim_data['q_dot'][controller], sim_data['q_r_dot'][controller]))
-                K_bar = [0.5*q_bar_dots[i].T@Ms[i]@q_bar_dots[i] for i in range(sim_data['q'][controller].shape[1])]
-                beta = np.sqrt(K_bar/E_bars[i]).squeeze()
-                e_bar_beta = q_bar_dots - beta*self.Vs[i]
-
-            ax[0].plot(sim_data['t'][controller], errors, label=r'$' + controller.name + r'$', linestyle=line_style[i])#r'$' + dims[0] + r'_{pvfc}$')
-        ax[0].set_ylabel(r'$e_{' + dims[0] + r'}\ [m]$', fontsize=30)
-        ax[0].legend()
-        ax[0].set_xlabel(r'$t\ [s]$', fontsize=30)
+            errors = sim_data['q_dot'] - Vs
+            ax[0].plot(sim_data['t'][controller], errors, label=r'$e_{' + controller.name + r'}$', linestyle=line_style[i])
+            ax[0].set_ylabel(r'$error\ [m]$', fontsize=30)
+            ax[0].legend()
+            ax[0].set_xlabel(r'$t\ [s]$', fontsize=30)
         plt.tight_layout()
-        plt.xlim(0,np.rint(times[-1]))
-        plt.savefig('plots/control_comparison', bbox_inches = 'tight', pad_inches = 0, dpi=1000)
+        plt.xlim(0,np.rint(sim_data['t'][controller]))
 
 
 class VizVelocityField(PlotSimResults):
