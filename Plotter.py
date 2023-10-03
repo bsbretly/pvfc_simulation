@@ -227,28 +227,33 @@ class PlotPassiveSimResults(PlotSimResults):
     
 
 class TrackingPerformanceComparo(PlotPassiveSimResults):
-    def __init__(self, controller):
-        self.controller = controller
+    def __init__(self):
         fp.setupPlotParams()
         
-    def plot_tracking_performance(self, fig, ax, sim_data):
+    def plot_tracking_performance(self, fig, ax, controllers, sim_data):
         M, C, G, B = {}, {}, {}, {}
         line_style = ['-', '-', '--']
+        dim = ['x', 'z']
         for i, controller in enumerate(util.ControllerInfo):
+            self.controller = controllers[i]  # controller object
             if controller in [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]:  # augmented controllers
                 K_bar = self.compute_vectorized_kinetic_energy(sim_data['q'][controller], sim_data['q_dot'][controller], sim_data['q_T_dot'][controller], sim_data['q_r_dot'][controller])[-1]
                 beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
                 q_bar_dots = np.vstack((sim_data['q_T_dot'][controller], sim_data['q_r_dot'][controller]))
                 beta_error = q_bar_dots - beta*sim_data['V'][controller]
-                ax[0].plot(sim_data['t'][controller], beta_error, label=r'$\bar{e}_{' + controller.name + r'}$', linestyle=line_style[i])
+                ax[0].plot(sim_data['t'][controller], beta_error[0], label=r'$\bar{e}_{'+dim[0]+', ' + controller.name + r'}$', linestyle=line_style[i])
+                ax[1].plot(sim_data['t'][controller], beta_error[0], label=r'$\bar{e}_{'+dim[1]+', ' + controller.name + r'}$', linestyle=line_style[i])
             Vs = sim_data['V'][controller][:-1,:]
-            errors = sim_data['q_dot'] - Vs
-            ax[0].plot(sim_data['t'][controller], errors, label=r'$e_{' + controller.name + r'}$', linestyle=line_style[i])
-            ax[0].set_ylabel(r'$error\ [m]$', fontsize=30)
+            errors = sim_data['q_dot'][controller][:2,:] - Vs
+            ax[0].plot(sim_data['t'][controller], errors[0], label=r'$e_{' +dim[0]+', '+ controller.name + r'}$', linestyle=line_style[i])
+            ax[1].plot(sim_data['t'][controller], errors[1], label=r'$e_{' +dim[1]+', '+ controller.name + r'}$', linestyle=line_style[i])
+            ax[0].set_ylabel(r'$e_'+dim[0]+'\ [m]$', fontsize=30)
+            ax[1].set_ylabel(r'$e_'+dim[0]+'\ [m]$', fontsize=30)
             ax[0].legend()
-            ax[0].set_xlabel(r'$t\ [s]$', fontsize=30)
+            ax[1].legend()
+            ax[1].set_xlabel(r'$t\ [s]$', fontsize=30)
         plt.tight_layout()
-        plt.xlim(0,np.rint(sim_data['t'][controller]))
+        plt.xlim(0,max(np.rint(sim_data['t'][controller])))
 
 
 class VizVelocityField(PlotSimResults):

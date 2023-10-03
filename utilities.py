@@ -18,6 +18,7 @@ class ControllerInfo(Enum):
     PD = 'PDControl'
     AUGMENTEDPD = 'AugmentedPDControl'
 
+
 def computeRampParams(p1, p2):
     '''
     input: 

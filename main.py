@@ -1,6 +1,6 @@
 from Simulation import Sim
 from Planner import VelocityPlanner, PointVelocityField, HorinzontalLineVelocityField, UpRampVelocityField, SuperQuadraticField
-from Controller import BaseControl, PVFC, PDControl, AugmentedPDControl
+from Controller import BaseControl, PassiveBaseControl, PVFC, PDControl, AugmentedPDControl
 from Robot import Robot, Quadrotor, AerialManipulator
 from Plotter import PlotSimResults, PlotPassiveSimResults, VizVelocityField, TrackingPerformanceComparo, plt 
 import utilities as util
@@ -9,9 +9,9 @@ from collections import namedtuple
 import numpy as np
 import pickle
 
-def check_sim_module_compatiblity(robot, planner):
-    if robot.__class__.__name__==util.RobotInfo.QUAD.value.robot_type and planner.__class__.__name__==util.PlannerInfo.RAMP.value: 
-        raise ValueError('Robot '+'['+robot.__class__.__name__+']'+' can not be run with planner '+'['+planner.__class__.__name__+']'+': please choose a differnt combination.')
+def check_sim_module_compatiblity(robot_type, planner_type):
+    if robot_type==util.RobotInfo.QUAD and planner_type==util.PlannerInfo.RAMP: 
+        raise ValueError('Robot '+'['+robot_type+']'+' can not be run with planner '+'['+planner_type+']'+': please choose a differnt combination.')
     else: pass
 
 def check_tracking_module_compatiblity(robot_type):
@@ -52,8 +52,13 @@ def create_controller(controller: util.ControllerInfo, robot_params: namedtuple)
     controller_class, *args = controllers.get(controller)
     return controller_class(robot_params, params.attitude_control_params(), *args)
 
-def run_sim(robot, planner, controller, sim_time=10, dt=0.01, plot=True, return_data=False):
-    check_sim_module_compatiblity(robot, planner)
+def run_sim(robot_type=util.RobotInfo.AM, planner_type=util.PlannerInfo.RAMP, controller_type=util.ControllerInfo.PVFC, sim_time=10, dt=0.01, plot=True, return_data=False):
+    check_sim_module_compatiblity(robot_type, planner_type)
+    # create modules
+    robot, robot_params, q_0, q_dot_0 = create_robot(robot_type)
+    planner = create_planner(planner_type, robot_type)
+    controller = create_controller(controller_type, robot_params)
+
     sim = Sim(planner, controller, robot, params.ramp_force_params())
     ts, u, F, F_r, f_e, q, q_dot, q_r_dot, V, V_dot = sim.run(q_0, q_dot_0, params.q_r, params.q_r_dot, sim_time=sim_time, dt=dt)  # run simulation
     us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs, V_dots =  np.concatenate(u,axis=1), np.concatenate(F,axis=1), (F_r), np.concatenate(f_e,axis=1), np.concatenate(q,axis=1), np.concatenate(q_dot,axis=1), (q_r_dot), np.concatenate(V,axis=1), np.concatenate(V_dot,axis=1)
@@ -114,24 +119,28 @@ def plot_results(planner, controller, robot, ts, us, Fs, F_rs, f_es, qs, q_dots,
     plot_sim_summary(plotter, planner_type, ts, us, qs, q_Ts)
     plt.show()
 
-def run_tracking_performance_comparo(controller, sim_time=10, dt=0.01, gen_data=False):
+def run_tracking_performance_comparo(robot_type=util.RobotInfo.AM, planner_type=util.PlannerInfo.RAMP, sim_time=60, dt=0.01, gen_data=False):
     check_tracking_module_compatiblity(robot_type)
     data_name = 'tracking_control_comparison_data.pickle'
     if gen_data:
         sim_data = {'t': {},'u': {},'F': {},'F_r': {},'f_e': {},'q': {},'q_dot': {},'q_T': {},'q_T_dot': {},'q_r_dot': {},'V': {},'V_dot': {}}
         for controller in util.ControllerInfo:
+            controller_type = controller
             sim_data['t'][controller], sim_data['u'][controller], sim_data['F'][controller], sim_data['F_r'][controller], sim_data['f_e'][controller], sim_data['q'][controller], sim_data['q_dot'][controller], sim_data['q_r_dot'][controller], sim_data['V'][controller], sim_data['V_dot'][controller] = \
-            run_sim(robot_type, planner_type, controller, sim_time=sim_time, dt=dt, plot=False, return_data=True)
-            sim_data['q_T'][controller], sim_data['q_T_dot'][controller] = get_task_space_state(sim_data['q'][controller], sim_data['q'][controller], robot.dynamics.tool_length)
+            run_sim(robot_type, planner_type, controller_type, sim_time=sim_time, dt=dt, plot=False, return_data=True)
+            sim_data['q_T'][controller], sim_data['q_T_dot'][controller] = get_task_space_state(sim_data['q'][controller], sim_data['q'][controller], params.tool_length)
         file = open('data/'+ data_name, 'wb')
         pickle.dump(sim_data, file)
         file.close()
     file = open('data/'+ data_name, 'rb')
     sim_data = pickle.load(file)
-    
-    plotter = TrackingPerformanceComparo(controller)
-    fig, ax = create_fig(1, 1)
-    plotter.plot_tracking_performance(fig, ax, sim_data)
+
+    plotter = TrackingPerformanceComparo()
+    fig, ax = create_fig(2, 1)
+    robot_params = create_robot(robot_type)[1]
+    controllers = [create_controller(controller_type, robot_params) for controller_type in util.ControllerInfo]
+    plotter.plot_tracking_performance(fig, ax, controllers, sim_data)
+    plt.show()
 
 def run_velocity_field_viz(planner_type, robot_type):
     planner = create_planner(planner_type, robot_type)
@@ -147,12 +156,8 @@ def run_velocity_field_viz(planner_type, robot_type):
 
 if __name__ == '__main__':
     robot_type: util.RobotInfo = util.RobotInfo.AM
-    planner_type: util.PlannerInfo = util.PlannerInfo.RAMP
-    controller_type: util.ControllerInfo = util.ControllerInfo.PD
-    # create modules
-    robot, robot_params, q_0, q_dot_0 = create_robot(robot_type)
-    planner = create_planner(planner_type, robot_type)
-    controller = create_controller(controller_type, robot_params)
-    # run_sim(robot, planner, controller, sim_time=5, plot=True, return_data=False)
-    run_tracking_performance_comparo(controller, sim_time=10, dt=0.01, gen_data=True)
+    planner_type: util.PlannerInfo = util.PlannerInfo.HORIZONTAL
+    controller_type: util.ControllerInfo = util.ControllerInfo.PVFC
+    # run_sim(robot_type, planner_type, controller_type, sim_time=60, plot=True, return_data=False)
+    run_tracking_performance_comparo(robot_type, planner_type, sim_time=60, dt=0.01, gen_data=True)
     # run_velocity_field_viz(planner_type, robot_type)  # to visualize the velocity field
