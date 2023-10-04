@@ -231,29 +231,31 @@ class TrackingPerformanceComparo(PlotPassiveSimResults):
         fp.setupPlotParams()
         
     def plot_tracking_performance(self, fig, ax, controllers, sim_data):
-        M, C, G, B = {}, {}, {}, {}
         line_style = ['-', '-', '--']
         dim = ['x', 'z']
-        for i, controller in enumerate(util.ControllerInfo):
-            self.controller = controllers[i]  # controller object
-            if controller in [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]:  # augmented controllers
-                K_bar = self.compute_vectorized_kinetic_energy(sim_data['q'][controller], sim_data['q_dot'][controller], sim_data['q_T_dot'][controller], sim_data['q_r_dot'][controller])[-1]
-                beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
-                q_bar_dots = np.vstack((sim_data['q_T_dot'][controller], sim_data['q_r_dot'][controller]))
-                beta_error = q_bar_dots - beta*sim_data['V'][controller]
-                ax[0].plot(sim_data['t'][controller], beta_error[0], label=r'$\bar{e}_{'+dim[0]+', ' + controller.name + r'}$', linestyle=line_style[i])
-                ax[1].plot(sim_data['t'][controller], beta_error[0], label=r'$\bar{e}_{'+dim[1]+', ' + controller.name + r'}$', linestyle=line_style[i])
-            Vs = sim_data['V'][controller][:-1,:]
-            errors = sim_data['q_dot'][controller][:2,:] - Vs
-            ax[0].plot(sim_data['t'][controller], errors[0], label=r'$e_{' +dim[0]+', '+ controller.name + r'}$', linestyle=line_style[i])
-            ax[1].plot(sim_data['t'][controller], errors[1], label=r'$e_{' +dim[1]+', '+ controller.name + r'}$', linestyle=line_style[i])
-            ax[0].set_ylabel(r'$e_'+dim[0]+'\ [m]$', fontsize=30)
-            ax[1].set_ylabel(r'$e_'+dim[0]+'\ [m]$', fontsize=30)
-            ax[0].legend()
-            ax[1].legend()
-            ax[1].set_xlabel(r'$t\ [s]$', fontsize=30)
+        # for i, controller in enumerate(util.ControllerInfo):
+            # self.controller = controllers[i]  # controller object
+        control_type = util.ControllerInfo.PVFC
+        i=0
+        self.controller = controllers  # controller object
+        if control_type in [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]:  # augmented controllers
+            K_bar = self.compute_vectorized_kinetic_energy(sim_data['q'][control_type], sim_data['q_dot'][control_type], sim_data['q_T_dot'][control_type], sim_data['q_r_dot'][control_type])[-1]
+            beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
+            q_bar_dots = np.vstack((sim_data['q_T_dot'][control_type], sim_data['q_r_dot'][control_type]))
+            beta_error = q_bar_dots - beta*sim_data['V'][control_type]
+            ax[0].plot(sim_data['t'][control_type], beta_error[0], label=r'$\bar{e}_{\beta,\ '+dim[0]+',\ ' + control_type.name + r'}$', linestyle=line_style[i])
+            ax[1].plot(sim_data['t'][control_type], beta_error[0], label=r'$\bar{e}_{\beta,\ '+dim[1]+',\ ' + control_type.name + r'}$', linestyle=line_style[i])
+        Vs = sim_data['V'][control_type][:-1,:]
+        # errors = sim_data['q_dot'][control_type][:2,:] - Vs
+        # ax[0].plot(sim_data['t'][control_type], errors[0], label=r'$e_{' +dim[0]+', '+ control_type.name + r'}$', linestyle=line_style[i])
+        # ax[1].plot(sim_data['t'][control_type], errors[1], label=r'$e_{' +dim[1]+', '+ control_type.name + r'}$', linestyle=line_style[i])
+        ax[0].set_ylabel(r'$e_'+dim[0]+'\ [m]$', fontsize=30)
+        ax[1].set_ylabel(r'$e_'+dim[0]+'\ [m]$', fontsize=30)
+        ax[0].legend()
+        ax[1].legend()
+        ax[1].set_xlabel(r'$t\ [s]$', fontsize=30)
         plt.tight_layout()
-        plt.xlim(0,max(np.rint(sim_data['t'][controller])))
+        plt.xlim(0,max(np.rint(sim_data['t'][control_type])))
 
 
 class VizVelocityField(PlotSimResults):

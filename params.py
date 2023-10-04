@@ -53,26 +53,7 @@ up_ramp_planner_params = namedtuple('up_ramp_planner_params', ['delta', 'p1', 'p
 super_quadratic_params = namedtuple('super_quadratic_params', ['obs_x', 'obs_z', 'obs_m', 'obs_n', 'obs_L', 'obs_len'], defaults=(obs_x, obs_z, obs_m, obs_n, obs_L, obs_len))
 
 # initial conditions
-AM_q, AM_q_dot = np.array([[0., .2, 0.*DEG_TO_RAD, 90.*DEG_TO_RAD]]).T, np.array([[0.1 , -0.01, 0., 0.]]).T # q = [x, z, theta, Beta]^T
-quad_q, quad_q_dot = np.array([[0., 0., 0.*DEG_TO_RAD]]).T, np.array([[0. , 0.05, 0.]]).T # q = [x, z, theta]^T
+AM_q, AM_q_dot = np.array([[0., .2, 0.*DEG_TO_RAD, 90.*DEG_TO_RAD]]).T, np.array([[0.1 , -0.01, 0., 0.]]).T  # q = [x, z, theta, Beta]^T
+quad_q, quad_q_dot = np.array([[0., 0., 0.*DEG_TO_RAD]]).T, np.array([[0. , 0.05, 0.]]).T  # q = [x, z, theta]^T
 q_r, q_r_dot = np.array(0.), np.array(0.)
 
-# parameter dictionaries
-# robots = {
-#         RobotType.AM: (AerialManipulator, AM_params(), AM_q, AM_q_dot),
-#         RobotType.QUAD: (Quadrotor, quadrotor_params(), quad_q, quad_q_dot)
-#     }
-# base_robot_planners = {
-#         RobotType.AM: base_AM_planner_params(),
-#         RobotType.QUAD: base_quad_planner_params()
-#     }
-# plans = {
-#         PlannerType.POINT: (PointVelocityField, base_point_planner_params(), point_planner_params()),
-#         PlannerType.HORIZONTAL: (HorinzontalLineVelocityField, base_horizontal_line_planner_params(), horizontal_line_planner_params()),
-#         PlannerType.RAMP: (UpRampVelocityField, base_up_ramp_planner_params(), up_ramp_planner_params())
-#     }
-# controllers = {
-#         ControllerType.PVFC: (PVFC, passive_params()),
-#         ControllerType.PD: (PDControl, pd_params()),
-#         ControllerType.AUGMENTEDPD: (AugmentedPDControl, passive_params(), pd_params())
-#     }
