@@ -113,11 +113,17 @@ class PlotPassiveSimResults(PlotSimResults):
         super().__init__(planner, controller, robot)
 
     def plotVelocityTracking(self, fig, ax, ts, qs, q_dots, q_T_dots, q_r_dots, Vs):
-        fig, ax = super().plotVelocityTracking(fig, ax, ts, q_T_dots, Vs)
+        # fig, ax = super().plotVelocityTracking(fig, ax, ts, q_T_dots, Vs)
         K_bar = self.compute_vectorized_kinetic_energy(qs, q_dots, q_T_dots, q_r_dots)[-1]
         beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
-        ax[0].plot(ts, beta*Vs[0,:], 'r--', label=r'$\beta V_x$')  # plot Beta velocity tracking
-        ax[1].plot(ts, beta*Vs[1,:], 'r--', label=r'$\beta V_z$')
+        q_bar_dots = np.vstack((q_T_dots, q_r_dots))
+        beta_error = q_bar_dots - beta*Vs
+        ax[0].plot(ts, beta_error[0], label=r'$e_{\beta,x}$')
+        # ax[0].plot(ts, beta*Vs[0,:], label=r'$\beta V_x$')  # plot Beta velocity tracking
+        ax[0].plot(ts, np.zeros_like(ts), 'r--')
+        ax[1].plot(ts, beta_error[1], label=r'$e_{\beta,z}$')
+        # ax[1].plot(ts, beta*Vs[1,:], label=r'$\beta V_z$')
+        ax[1].plot(ts, np.zeros_like(ts), 'r--')
         ax[0].legend()
         ax[1].legend()
         return fig, ax
@@ -239,13 +245,13 @@ class TrackingPerformanceComparo(PlotPassiveSimResults):
         i=0
         self.controller = controllers  # controller object
         if control_type in [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]:  # augmented controllers
-            K_bar = self.compute_vectorized_kinetic_energy(sim_data['q'][control_type], sim_data['q_dot'][control_type], sim_data['q_T_dot'][control_type], sim_data['q_r_dot'][control_type])[-1]
+            K_bar = self.compute_vectorized_kinetic_energy(sim_data['qs'][control_type], sim_data['q_dots'][control_type], sim_data['q_T_dots'][control_type], sim_data['q_r_dots'][control_type])[-1]
             beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
-            q_bar_dots = np.vstack((sim_data['q_T_dot'][control_type], sim_data['q_r_dot'][control_type]))
-            beta_error = q_bar_dots - beta*sim_data['V'][control_type]
-            ax[0].plot(sim_data['t'][control_type], beta_error[0], label=r'$\bar{e}_{\beta,\ '+dim[0]+',\ ' + control_type.name + r'}$', linestyle=line_style[i])
-            ax[1].plot(sim_data['t'][control_type], beta_error[0], label=r'$\bar{e}_{\beta,\ '+dim[1]+',\ ' + control_type.name + r'}$', linestyle=line_style[i])
-        Vs = sim_data['V'][control_type][:-1,:]
+            q_bar_dots = np.vstack((sim_data['q_T_dots'][control_type], sim_data['q_r_dots'][control_type]))
+            beta_error = q_bar_dots - beta*sim_data['Vs'][control_type]
+            ax[0].plot(sim_data['ts'][control_type], beta_error[0], label=r'$\bar{e}_{\beta,\ '+dim[0]+',\ ' + control_type.name + r'}$', linestyle=line_style[i])
+            ax[1].plot(sim_data['ts'][control_type], beta_error[1], label=r'$\bar{e}_{\beta,\ '+dim[1]+',\ ' + control_type.name + r'}$', linestyle=line_style[i])
+        Vs = sim_data['Vs'][control_type][:-1,:]
         # errors = sim_data['q_dot'][control_type][:2,:] - Vs
         # ax[0].plot(sim_data['t'][control_type], errors[0], label=r'$e_{' +dim[0]+', '+ control_type.name + r'}$', linestyle=line_style[i])
         # ax[1].plot(sim_data['t'][control_type], errors[1], label=r'$e_{' +dim[1]+', '+ control_type.name + r'}$', linestyle=line_style[i])
@@ -255,7 +261,7 @@ class TrackingPerformanceComparo(PlotPassiveSimResults):
         ax[1].legend()
         ax[1].set_xlabel(r'$t\ [s]$', fontsize=30)
         plt.tight_layout()
-        plt.xlim(0,max(np.rint(sim_data['t'][control_type])))
+        plt.xlim(0,max(np.rint(sim_data['ts'][control_type])))
 
 
 class VizVelocityField(PlotSimResults):

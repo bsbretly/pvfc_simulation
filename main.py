@@ -4,12 +4,10 @@ from Controller import BaseControl, PassiveBaseControl, PVFC, PDControl, Augment
 from Robot import Robot, Quadrotor, AerialManipulator
 from Plotter import PlotSimResults, PlotPassiveSimResults, VizVelocityField, TrackingPerformanceComparo, plt 
 import utilities as util
-import TestSimResults
 import params
 from collections import namedtuple
 import numpy as np
 import pickle
-import unittest
 
 def check_sim_module_compatiblity(robot_type, planner_type):
     if robot_type==util.RobotInfo.QUAD and planner_type==util.PlannerInfo.RAMP: 
@@ -130,24 +128,29 @@ def run_tracking_performance_comparo(robot_type=util.RobotInfo.AM, planner_type=
         # for controller in util.ControllerInfo:
             # controller_type = controller
         for i in range(1):
-            sim_data['ts'][controller_type], sim_data['us'][controller_type], sim_data['Fs'][controller_type], sim_data['F_rs'][controller_type], sim_data['f_es'][controller_type], sim_data['qs'][controller_type], sim_data['q_dots'][controller_type], sim_data['q_r_dots'][controller_type], sim_data['Vs'][controller_type], sim_data['V_dots'][controller_type] = \
+            sim_data['ts'][controller_type], sim_data['us'][controller_type], sim_data['Fs'][controller_type], sim_data['F_rs'][controller_type], sim_data['f_es'][controller_type], sim_data['qs'][controller_type], sim_data['q_dots'][controller_type], sim_data['q_r_dots'][controller_type], sim_data['Vs'][controller_type] = \
             run_sim(robot_type, planner_type, controller_type, sim_time=sim_time, dt=dt, plot=False, return_data=True)
-            sim_data['q_Ts'][controller_type], sim_data['q_T_dots'][controller_type] = get_task_space_state(sim_data['qs'][controller_type], sim_data['qs'][controller_type], params.tool_length)
+            sim_data['q_Ts'][controller_type], sim_data['q_T_dots'][controller_type] = get_task_space_state(sim_data['qs'][controller_type], sim_data['q_dots'][controller_type], params.tool_length)
         file = open('data/'+ data_name, 'wb')
         pickle.dump(sim_data, file)
         file.close()
     file = open('data/'+ data_name, 'rb')
     sim_data = pickle.load(file)
 
-    plotter = TrackingPerformanceComparo()
-    fig1, ax1 = create_fig(2, 1)
-    robot_params = create_robot(robot_type)[1]
+    # plotter = TrackingPerformanceComparo()
+    # fig1, ax1 = create_fig(2, 1)
+    # robot_params = create_robot(robot_type)[1]
     # controllers = [create_controller(controller_type, robot_params) for controller_type in util.ControllerInfo]
-    controllers  = create_controller(util.ControllerInfo.PVFC, robot_params)
-    plotter.plot_tracking_performance(fig1, ax1, controllers, sim_data)
-    
+    # controllers  = create_controller(util.ControllerInfo.PVFC, robot_params)
+    # plotter.plot_tracking_performance(fig1, ax1, controllers, sim_data)
+
+    robot, robot_params, _, _ = create_robot(robot_type)
+    planner = create_planner(planner_type, robot_type)
+    controller = create_controller(controller_type, robot_params)
+
+    plotter = PlotPassiveSimResults(planner, controller, robot)
     fig2, ax2 = create_fig(2, 1)
-    plotter.plotVelocityTracking(fig2, ax2, sim_data['t'][controller_type], sim_data['q'][controller_type], sim_data['q_dot'][controller_type], sim_data['q_T_dot'][controller_type], sim_data['q_r_dot'][controller_type], sim_data['V'][controller_type])
+    plotter.plotVelocityTracking(fig2, ax2, sim_data['ts'][controller_type], sim_data['qs'][controller_type], sim_data['q_dots'][controller_type], sim_data['q_T_dots'][controller_type], sim_data['q_r_dots'][controller_type], sim_data['Vs'][controller_type])
 
     plt.show()
 
@@ -164,12 +167,9 @@ def run_velocity_field_viz(planner_type, robot_type):
 
 
 if __name__ == '__main__':
-    test_suite = unittest.TestLoader().loadTestsFromModule(TestSimResults)
-    unittest.TextTestRunner().run(test_suite)
-
-    # robot_type: util.RobotInfo = util.RobotInfo.AM
-    # planner_type: util.PlannerInfo = util.PlannerInfo.HORIZONTAL
-    # controller_type: util.ControllerInfo = util.ControllerInfo.PVFC
+    robot_type: util.RobotInfo = util.RobotInfo.AM
+    planner_type: util.PlannerInfo = util.PlannerInfo.HORIZONTAL
+    controller_type: util.ControllerInfo = util.ControllerInfo.PVFC
     # run_sim(robot_type, planner_type, controller_type, sim_time=60, plot=True, return_data=False)
-    # run_tracking_performance_comparo(robot_type, planner_type, sim_time=60, dt=0.01, gen_data=True)  # runs comparo for all controllers
+    run_tracking_performance_comparo(robot_type, planner_type, sim_time=60, dt=0.01, gen_data=True)  # runs comparo for all controllers
     # run_velocity_field_viz(planner_type, robot_type)  # to visualize the velocity field
