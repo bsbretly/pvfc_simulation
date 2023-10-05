@@ -142,7 +142,7 @@ def create_robot(robot: RobotInfo) -> Robot:
         RobotInfo.QUAD: (Quadrotor, params.quadrotor_params(), params.quad_q, params.quad_q_dot)
     }
     robot_class, robot_params, robot_init_p, robot_init_v = robots.get(robot)
-    return robot_class(robot_params), robot_params, robot_init_p, robot_init_v
+    return robot_class(robot_params), robot_params, robot_init_p.copy(), robot_init_v.copy()
 
 def create_planner(plan: PlannerInfo, robot: RobotInfo) -> VelocityPlanner:
     base_robot_planners = {

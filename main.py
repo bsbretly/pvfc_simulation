@@ -13,7 +13,7 @@ def run_sim(robot_type=util.RobotInfo.AM, planner_type=util.PlannerInfo.RAMP, co
     controller = util.create_controller(controller_type, robot_params)
 
     sim = Sim(planner, controller, robot, params.ramp_force_params())
-    ts, u, F, F_r, f_e, q, q_dot, q_r_dot, V, V_dot = sim.run(q_0, q_dot_0, params.q_r, params.q_r_dot, sim_time=sim_time, dt=dt)  # run simulation
+    ts, u, F, F_r, f_e, q, q_dot, q_r_dot, V, V_dot = sim.run(q_0, q_dot_0, params.q_r.copy(), params.q_r_dot.copy(), sim_time=sim_time, dt=dt)  # run simulation
     us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs, V_dots =  np.concatenate(u,axis=1), np.concatenate(F,axis=1), (F_r), np.concatenate(f_e,axis=1), np.concatenate(q,axis=1), np.concatenate(q_dot,axis=1), (q_r_dot), np.concatenate(V,axis=1), np.concatenate(V_dot,axis=1)
     if plot: plot_results(planner, controller, robot, ts, us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs)
     if return_data: return ts, us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs
