@@ -1,6 +1,11 @@
 import numpy as np
 from enum import Enum
 from collections import namedtuple
+from Planner import VelocityPlanner, PointVelocityField, HorinzontalLineVelocityField, UpRampVelocityField, SuperQuadraticField
+from Controller import BaseControl, PassiveBaseControl, PVFC, PDControl, AugmentedPDControl
+from Robot import Robot, Quadrotor, AerialManipulator
+import params
+import matplotlib.pyplot as plt
 
 RobotData = namedtuple('RobotData', ['robot_type', 'dynamics_type'])
 
@@ -15,10 +20,9 @@ class PlannerInfo(Enum):
 
 class ControllerInfo(Enum):
     PVFC = 'PVFC'
-    PD = 'PDControl'
     AUGMENTEDPD = 'AugmentedPDControl'
-
-
+    PD = 'PDControl'
+    
 def computeRampParams(p1, p2):
     '''
     input: 
@@ -106,3 +110,61 @@ def augmentDynamics(M, C, m_r):
     M_bar[-1,-1] = m_r
     C_bar = np.pad(C, ((0,1),(0,1)), 'constant')
     return M_bar, C_bar
+
+def get_task_space_state_vectorized(q, q_dot, tool_length):
+    q_T, q_T_dot = zip(*[configToTask(q_i, q_dot_i, tool_length) for q_i, q_dot_i in zip(q.T[:,:,None], q_dot.T[:,:,None])])
+    return np.concatenate(q_T,axis=1), np.concatenate(q_T_dot,axis=1)
+
+def create_fig(rows,cols,figsize=(16,9),sharex=True):
+    fig, ax = plt.subplots(rows, cols, figsize=figsize, sharex=sharex)
+    if rows==1 and cols==1: ax = np.array([ax])
+    return fig, ax
+
+def get_config_and_task_state_vectorized(robot_type, qs, q_dots, tool_length):
+    if robot_type==RobotInfo.QUAD.value.robot_type: return qs, q_dots, qs[:2,:], q_dots[:2,:]
+    else: 
+        q_Ts, q_T_dots = get_task_space_state_vectorized(qs, q_dots, tool_length)
+        return qs, q_dots, q_Ts, q_T_dots
+    
+def check_sim_module_compatiblity(robot_type, planner_type):
+    if robot_type==RobotInfo.QUAD and planner_type==PlannerInfo.RAMP: 
+        raise ValueError('Robot '+'['+robot_type+']'+' can not be run with planner '+'['+planner_type+']'+': please choose a differnt combination.')
+    else: pass
+
+def check_tracking_module_compatiblity(robot_type):
+    if robot_type==RobotInfo.QUAD: 
+        raise ValueError('Tracking performance for the '+'['+robot_type.value.robot_type+']'+' is not yet implemented.')
+    else: pass
+
+def create_robot(robot: RobotInfo) -> Robot:
+    robots = {
+        RobotInfo.AM: (AerialManipulator, params.AM_params(), params.AM_q, params.AM_q_dot),
+        RobotInfo.QUAD: (Quadrotor, params.quadrotor_params(), params.quad_q, params.quad_q_dot)
+    }
+    robot_class, robot_params, robot_init_p, robot_init_v = robots.get(robot)
+    return robot_class(robot_params), robot_params, robot_init_p, robot_init_v
+
+def create_planner(plan: PlannerInfo, robot: RobotInfo) -> VelocityPlanner:
+    base_robot_planners = {
+        RobotInfo.AM: params.base_AM_planner_params(),
+        RobotInfo.QUAD: params.base_quad_planner_params()
+    }
+    base_robot_planner_params = base_robot_planners.get(robot)
+    plans = {
+        PlannerInfo.POINT: (PointVelocityField, params.base_point_planner_params(), params.point_planner_params()),
+        PlannerInfo.HORIZONTAL: (HorinzontalLineVelocityField, params.base_horizontal_line_planner_params(), params.horizontal_line_planner_params()),
+        PlannerInfo.RAMP: (UpRampVelocityField, params.base_up_ramp_planner_params(), params.up_ramp_planner_params())
+    }
+    planner_class, base_planner_params, planner_params = plans.get(plan)
+    planner = planner_class(base_robot_planner_params, base_planner_params, planner_params)
+    if params.obstacle: planner += SuperQuadraticField(base_robot_planner_params, params.super_quadratic_params())
+    return planner
+
+def create_controller(controller: ControllerInfo, robot_params: namedtuple) -> BaseControl:
+    controllers = {
+        ControllerInfo.PVFC: (PVFC, params.passive_params()),
+        ControllerInfo.PD: (PDControl, params.pd_params()),
+        ControllerInfo.AUGMENTEDPD: (AugmentedPDControl, params.passive_params(), params.pd_params())
+    }
+    controller_class, *args = controllers.get(controller)
+    return controller_class(robot_params, params.attitude_control_params(), *args)

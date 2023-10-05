@@ -114,7 +114,7 @@ class PlotPassiveSimResults(PlotSimResults):
 
     def plotVelocityTracking(self, fig, ax, ts, qs, q_dots, q_T_dots, q_r_dots, Vs):
         # fig, ax = super().plotVelocityTracking(fig, ax, ts, q_T_dots, Vs)
-        K_bar = self.compute_vectorized_kinetic_energy(qs, q_dots, q_T_dots, q_r_dots)[-1]
+        K_bar = self.compute_kinetic_energy_vectorized(qs, q_dots, q_T_dots, q_r_dots)[-1]
         beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
         q_bar_dots = np.vstack((q_T_dots, q_r_dots))
         beta_error = q_bar_dots - beta*Vs
@@ -133,7 +133,7 @@ class PlotPassiveSimResults(PlotSimResults):
             ax[0].plot(ts, f_es[i])
         ax[0].legend([r'$\tilde{f}_{e,x}$', r'$\tilde{f}_{e,z}$'], loc='lower right')
         ax[0].set_ylabel(r'$[N]$')
-        K, K_r, K_bar = self.compute_vectorized_kinetic_energy(qs, q_dots, q_T_dots, q_r_dots)
+        K, K_r, K_bar = self.compute_kinetic_energy_vectorized(qs, q_dots, q_T_dots, q_r_dots)
         K_bar_dot = np.gradient(K_bar.squeeze(), ts)
         f_e_power =  np.array([q_T_dots[:,i].reshape(-1,1).T@f_es[:,i].reshape(-1,1) for i in range(q_T_dots.shape[1])]).squeeze()
 
@@ -222,7 +222,7 @@ class PlotPassiveSimResults(PlotSimResults):
         plt.suptitle(r'$\text{Power Annihilation}$')
         return fig, ax
     
-    def compute_vectorized_kinetic_energy(self, qs, q_dots, q_T_dots, q_r_dots):
+    def compute_kinetic_energy_vectorized(self, qs, q_dots, q_T_dots, q_r_dots):
         cols = qs.shape[1]
         q_bar_dots = np.vstack((q_T_dots, q_r_dots))
         M_bar = [self.controller.computeDynamics(qs[:, i:i+1], q_dots[:, i:i+1])[0] for i in range(cols)]
@@ -237,30 +237,29 @@ class TrackingPerformanceComparo(PlotPassiveSimResults):
         fp.setupPlotParams()
         
     def plot_tracking_performance(self, fig, ax, controllers, sim_data):
-        line_style = ['-', '-', '--']
+        line_style = ['-', '-', '-']
         dim = ['x', 'z']
-        # for i, controller in enumerate(util.ControllerInfo):
-            # self.controller = controllers[i]  # controller object
-        control_type = util.ControllerInfo.PVFC
-        i=0
-        self.controller = controllers  # controller object
-        if control_type in [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]:  # augmented controllers
-            K_bar = self.compute_vectorized_kinetic_energy(sim_data['qs'][control_type], sim_data['q_dots'][control_type], sim_data['q_T_dots'][control_type], sim_data['q_r_dots'][control_type])[-1]
-            beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
-            q_bar_dots = np.vstack((sim_data['q_T_dots'][control_type], sim_data['q_r_dots'][control_type]))
-            beta_error = q_bar_dots - beta*sim_data['Vs'][control_type]
-            ax[0].plot(sim_data['ts'][control_type], beta_error[0], label=r'$\bar{e}_{\beta,\ '+dim[0]+',\ ' + control_type.name + r'}$', linestyle=line_style[i])
-            ax[1].plot(sim_data['ts'][control_type], beta_error[1], label=r'$\bar{e}_{\beta,\ '+dim[1]+',\ ' + control_type.name + r'}$', linestyle=line_style[i])
-        Vs = sim_data['Vs'][control_type][:-1,:]
-        # errors = sim_data['q_dot'][control_type][:2,:] - Vs
-        # ax[0].plot(sim_data['t'][control_type], errors[0], label=r'$e_{' +dim[0]+', '+ control_type.name + r'}$', linestyle=line_style[i])
-        # ax[1].plot(sim_data['t'][control_type], errors[1], label=r'$e_{' +dim[1]+', '+ control_type.name + r'}$', linestyle=line_style[i])
+        for i, control_type in enumerate(util.ControllerInfo):
+            self.controller = controllers[i]  # controller object
+            if control_type in [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]:  # augmented controllers
+                K_bar = self.compute_kinetic_energy_vectorized(sim_data['qs'][control_type], sim_data['q_dots'][control_type], sim_data['q_T_dots'][control_type], sim_data['q_r_dots'][control_type])[-1]
+                beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
+                q_T_bar_dots = np.vstack((sim_data['q_T_dots'][control_type], sim_data['q_r_dots'][control_type]))
+                beta_error = q_T_bar_dots - beta*sim_data['Vs'][control_type]
+                ax[0].plot(sim_data['ts'][control_type], beta_error[0], label=r'$\bar{e}_{\beta,'+dim[0]+',' + control_type.name + r'}$', linestyle=line_style[i])
+                ax[1].plot(sim_data['ts'][control_type], beta_error[1], label=r'$\bar{e}_{\beta,'+dim[1]+',' + control_type.name + r'}$', linestyle=line_style[i])
+            else:
+                error = sim_data['q_T_dots'][control_type] - sim_data['Vs'][control_type][:-1,:]
+                ax[0].plot(sim_data['ts'][control_type], error[0], label=r'$e_{' +dim[0]+','+ control_type.name + r'}$', linestyle=line_style[i])
+                ax[1].plot(sim_data['ts'][control_type], error[1], label=r'$e_{' +dim[1]+','+ control_type.name + r'}$', linestyle=line_style[i])
+        ax[0].plot(sim_data['ts'][control_type], np.zeros_like(sim_data['ts'][control_type]), 'r--')
+        ax[1].plot(sim_data['ts'][control_type], np.zeros_like(sim_data['ts'][control_type]), 'r--')
         ax[0].set_ylabel(r'$e_'+dim[0]+'\ [m]$', fontsize=30)
-        ax[1].set_ylabel(r'$e_'+dim[0]+'\ [m]$', fontsize=30)
+        ax[1].set_ylabel(r'$e_'+dim[1]+'\ [m]$', fontsize=30)
         ax[0].legend()
         ax[1].legend()
         ax[1].set_xlabel(r'$t\ [s]$', fontsize=30)
-        plt.tight_layout()
+        # plt.tight_layout()
         plt.xlim(0,max(np.rint(sim_data['ts'][control_type])))
 
 
