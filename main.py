@@ -1,5 +1,5 @@
 from Simulation import Sim
-from Plotter import PlotSimResults, PlotPassiveSimResults, VizVelocityField, TrackingPerformanceComparo, plt 
+from Plotter import PlotSimResults, PlotPassiveSimResults, VizVelocityField, ControlComparison, plt 
 import utilities as util
 import params
 import numpy as np
@@ -39,11 +39,11 @@ def run_tracking_performance_comparo(robot_type=util.RobotInfo.AM, planner_type=
     else: 
         with open('data/' + data_name, 'rb') as file: sim_data = pickle.load(file)
 
-    plotter = TrackingPerformanceComparo()
-    fig1, ax1 = util.create_fig(2, 1)
     robot_params = util.create_robot(robot_type)[1]
     controllers = [util.create_controller(controller_type, robot_params) for controller_type in util.ControllerInfo]
-    plotter.plot_tracking_performance(fig1, ax1, controllers, sim_data)
+    plotter = ControlComparison(controllers, sim_data)
+    plotter.plot_comparo(plot_error=True, plot_velocity_tracking=True)
+
     plt.show()
     
 def plot_augmented_sim_results(planner, controller, robot, ts, Fs, F_rs, f_es, qs, q_dots, q_Ts, q_T_dots, q_r_dots, Vs):
@@ -102,5 +102,5 @@ if __name__ == '__main__':
     planner_type: util.PlannerInfo = util.PlannerInfo.HORIZONTAL
     controller_type: util.ControllerInfo = util.ControllerInfo.PVFC
     # run_sim(robot_type, planner_type, controller_type, sim_time=60, plot=True, return_data=False)
-    run_tracking_performance_comparo(robot_type, planner_type, sim_time=60, dt=0.01, gen_data=True)  # runs comparo for all controllers
+    run_tracking_performance_comparo(robot_type, planner_type, sim_time=60, dt=0.01, gen_data=False)  # runs comparo for all controllers
     # run_velocity_field_viz(planner_type, robot_type)  # to visualize the velocity field
