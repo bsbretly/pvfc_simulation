@@ -109,7 +109,7 @@ class AugmentedPDControl(PassiveBaseControl):
 
     def computeControlAction(self, q_dot, q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt):
         qbar_dot = np.vstack([q_dot, q_r_dot])
-        tau_bar = M@V_bar_dot + C@V_bar - self.K_p*(qbar_dot - V_bar)
+        tau_bar = M@V_bar_dot + C@V_bar + self.K_p*(V_bar - qbar_dot)
         q_r, q_r_dot = self.updateReservoirState(tau_bar[-1,-1], q_r, q_r_dot, dt)
         return tau_bar[:2,:], tau_bar[-1,-1], q_r, q_r_dot
  

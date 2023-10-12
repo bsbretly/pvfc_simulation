@@ -18,12 +18,10 @@ def run_sim(robot_type=util.RobotInfo.AM, planner_type=util.PlannerInfo.RAMP, co
     if plot: plot_results(planner, controller, robot, ts, us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs)
     if return_data: return ts, us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs
 
-def run_tracking_performance_comparo(robot_type=util.RobotInfo.AM, planner_type=util.PlannerInfo.RAMP, sim_time=60, dt=0.01, gen_data=False):
+def run_tracking_performance_comparo(robot_type=util.RobotInfo.AM, planner_type=util.PlannerInfo.RAMP, controller_types=[util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD, util.ControllerInfo.PD], sim_time=60, dt=0.01, gen_data=False):
     util.check_tracking_module_compatiblity(robot_type)
     data_name = 'tracking_control_comparison_data.pickle'
-    controller_type = util.ControllerInfo.PVFC
     if gen_data:
-        controller_types = list(util.ControllerInfo)
         keys = ['ts', 'us', 'Fs', 'F_rs', 'f_es', 'qs', 'q_dots', 'q_r_dots', 'Vs', 'q_Ts', 'q_T_dots']
         sim_data = {key: {controller_type: None for controller_type in controller_types} for key in keys}
         sim_keys = ['ts', 'us', 'Fs', 'F_rs', 'f_es', 'qs', 'q_dots', 'q_r_dots', 'Vs']
@@ -33,16 +31,21 @@ def run_tracking_performance_comparo(robot_type=util.RobotInfo.AM, planner_type=
             for key, value in zip(sim_keys, sim_results): 
                 sim_data[key][controller_type] = value
             sim_data['q_Ts'][controller_type], sim_data['q_T_dots'][controller_type] = util.get_task_space_state_vectorized(sim_data['qs'][controller_type], sim_data['q_dots'][controller_type], params.tool_length)
-        with open('data/' + data_name, 'wb') as file: 
-            pickle.dump(sim_data, file)
+        try:
+            with open('data/' + data_name, 'wb') as file: 
+                pickle.dump(sim_data, file)
+        except IOError as e: print(f"File writing error: {e}")
     # Load data from pickle file
-    else: 
-        with open('data/' + data_name, 'rb') as file: sim_data = pickle.load(file)
-
+    else:
+        try:
+            with open('data/' + data_name, 'rb') as file: sim_data = pickle.load(file)
+        except IOError as e: print(f"File reading error: {e}")
+    data_present = all(all(controller_type in sim_data[key] for controller_type in controller_types) for key in sim_data)
+    if not data_present: raise KeyError(f"Some or all desired controller types are missing in the pickle file {data_name}.")
     robot_params = util.create_robot(robot_type)[1]
     controllers = [util.create_controller(controller_type, robot_params) for controller_type in util.ControllerInfo]
     plotter = ControlComparison(controllers, sim_data)
-    plotter.plot_comparo(plot_error=True, plot_velocity_tracking=True)
+    plotter.plot_comparo(plot_error=True, plot_velocity_tracking=True, controller_types=controller_types)
 
     plt.show()
     
@@ -102,5 +105,6 @@ if __name__ == '__main__':
     planner_type: util.PlannerInfo = util.PlannerInfo.HORIZONTAL
     controller_type: util.ControllerInfo = util.ControllerInfo.PVFC
     # run_sim(robot_type, planner_type, controller_type, sim_time=60, plot=True, return_data=False)
-    run_tracking_performance_comparo(robot_type, planner_type, sim_time=60, dt=0.01, gen_data=False)  # runs comparo for all controllers
+    controller_types = [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]  # define which controllers to compare
+    run_tracking_performance_comparo(robot_type, planner_type, controller_types, sim_time=30, dt=0.01, gen_data=False)  # runs comparo for all controllers
     # run_velocity_field_viz(planner_type, robot_type)  # to visualize the velocity field

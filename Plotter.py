@@ -251,7 +251,9 @@ class ControlComparison(PlotPassiveSimResults):
             q_T_bar_dots = np.vstack((q_T_dots, q_r_dots))
             beta_error = q_T_bar_dots - beta*Vs
             ax[0].plot(ts, beta_error[0], label=r'$\bar{e}_{\beta,'+dim[0]+',' + control_type.name + r'}$')
+            ax[0].plot(ts, beta, label=r'$\beta_{' + control_type.name + r'}$')
             ax[1].plot(ts, beta_error[1], label=r'$\bar{e}_{\beta,'+dim[1]+',' + control_type.name + r'}$')
+            ax[1].plot(ts, beta, label=r'$\beta_{' + control_type.name + r'}$')
         else:
             error = q_T_dots - Vs[:-1,:]
             ax[0].plot(ts, error[0], label=r'$e_{' +dim[0]+','+ control_type.name + r'}$')
@@ -266,10 +268,11 @@ class ControlComparison(PlotPassiveSimResults):
         plt.xlim(0,max(np.rint(ts)))
         return fig, ax
 
-    def plot_comparo(self, plot_error=True, plot_velocity_tracking=True):
+    def plot_comparo(self, plot_error=True, plot_velocity_tracking=True, controller_types=None):
+        if controller_types == None: raise NotImplementedError("Must specify controller types to plot.")
         fig1, axs1 = util.create_fig(2, 1)
         error_title = 'Error Comparison'
-        for i, control_type in enumerate(util.ControllerInfo):
+        for i, control_type in enumerate(controller_types):
             self.controller = self.controllers[i]  # controller object
             if plot_error:    
                 fig1, axs1 = self.plot_error(fig1, axs1, control_type, self.data['ts'][control_type], self.data['qs'][control_type], self.data['q_dots'][control_type], self.data['q_T_dots'][control_type], self.data['q_r_dots'][control_type], self.data['Vs'][control_type])
