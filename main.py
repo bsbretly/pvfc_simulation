@@ -32,14 +32,21 @@ def run_tracking_performance_comparo(robot_type=util.RobotInfo.AM, planner_type=
                 sim_data[key][controller_type] = value
             sim_data['q_Ts'][controller_type], sim_data['q_T_dots'][controller_type] = util.get_task_space_state_vectorized(sim_data['qs'][controller_type], sim_data['q_dots'][controller_type], params.tool_length)
         try:
+            data_to_save = {
+                "sim_data": sim_data,
+                "robot_type": robot_type,
+                "planner_type": planner_type,
+                "controller_types": controller_types
+            }
             with open('data/' + data_name, 'wb') as file: 
-                pickle.dump(sim_data, file)
+                pickle.dump(data_to_save, file)
         except IOError as e: print(f"File writing error: {e}")
     # Load data from pickle file
     else:
         try:
-            with open('data/' + data_name, 'rb') as file: sim_data = pickle.load(file)
+            with open('data/' + data_name, 'rb') as file: loaded_data = pickle.load(file)
         except IOError as e: print(f"File reading error: {e}")
+    sim_data = loaded_data['sim_data']
     data_present = all(all(controller_type in sim_data[key] for controller_type in controller_types) for key in sim_data)
     if not data_present: raise KeyError(f"Some or all desired controller types are missing in the pickle file {data_name}.")
     robot_params = util.create_robot(robot_type)[1]

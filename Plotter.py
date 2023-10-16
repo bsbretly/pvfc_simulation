@@ -250,9 +250,9 @@ class ControlComparison(PlotPassiveSimResults):
             beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
             q_T_bar_dots = np.vstack((q_T_dots, q_r_dots))
             beta_error = q_T_bar_dots - beta*Vs
-            ax[0].plot(ts, beta_error[0], label=r'$\bar{e}_{\beta,'+dim[0]+',' + control_type.name + r'}$')
+            # ax[0].plot(ts, beta_error[0], label=r'$\bar{e}_{\beta,'+dim[0]+',' + control_type.name + r'}$')
             ax[0].plot(ts, beta, label=r'$\beta_{' + control_type.name + r'}$')
-            ax[1].plot(ts, beta_error[1], label=r'$\bar{e}_{\beta,'+dim[1]+',' + control_type.name + r'}$')
+            # ax[1].plot(ts, beta_error[1], label=r'$\bar{e}_{\beta,'+dim[1]+',' + control_type.name + r'}$')
             ax[1].plot(ts, beta, label=r'$\beta_{' + control_type.name + r'}$')
         else:
             error = q_T_dots - Vs[:-1,:]

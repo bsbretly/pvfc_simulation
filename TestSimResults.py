@@ -16,11 +16,12 @@ class TestSimResults(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         with open(cls.TEST_DATA_FILE, 'rb') as file:
-            cls.sim_data = pickle.load(file)
+            cls.loaded_data = pickle.load(file)
         
-        cls.robot_type = util.RobotInfo.AM
-        cls.planner_type = util.PlannerInfo.HORIZONTAL
-        cls.controller_types = [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]
+        cls.sim_data = cls.loaded_data['sim_data']
+        cls.robot_type = cls.loaded_data['robot_type']
+        cls.planner_type = cls.loaded_data['planner_type']
+        cls.controller_types = cls.loaded_data['controller_types']
         sim_time = np.rint(cls.sim_data['ts'][cls.controller_types[0]][-1])
         dt = sim_time / len(cls.sim_data['ts'][cls.controller_types[0]])
         

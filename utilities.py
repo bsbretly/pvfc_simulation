@@ -95,11 +95,11 @@ def augmentDynamics(M, C, m_r):
     C_bar = np.pad(C, ((0,1),(0,1)), 'constant')
     return M_bar, C_bar
 
-_RobotData = namedtuple('RobotData', ['robot_type', 'dynamics_type'])
+RobotData = namedtuple('RobotData', ['robot_type', 'dynamics_type'])
 
 class RobotInfo(Enum):
-    QUAD = _RobotData('Quadrotor', 'QuadrotorTranslationalDynamics')
-    AM = _RobotData('AerialManipulator', 'AerialManipulatorTaskDynamics')
+    QUAD = RobotData('Quadrotor', 'QuadrotorTranslationalDynamics')
+    AM = RobotData('AerialManipulator', 'AerialManipulatorTaskDynamics')
     
 class PlannerInfo(Enum):
     POINT = 'PointVelocityField'
