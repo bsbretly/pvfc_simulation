@@ -15,7 +15,7 @@ class Robot:
         q_ddot = np.linalg.inv(M)@(B@u + F_e - G - C@q_dot)
         q_dot += q_ddot*dt 
         q += q_dot*dt 
-        return q, q_dot
+        return q, q_dot, q_ddot
 
 
 class Quadrotor(Robot):

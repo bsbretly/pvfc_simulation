@@ -8,12 +8,12 @@ import pickle
 def run_sim(robot_type=util.RobotInfo.AM, planner_type=util.PlannerInfo.RAMP, controller_type=util.ControllerInfo.PVFC, sim_time=10, dt=0.01, plot=True, return_data=False):
     util.check_sim_module_compatiblity(robot_type, planner_type)
     # create modules
-    robot, robot_params, q_0, q_dot_0 = util.create_robot(robot_type)
+    robot, robot_params, q_0, q_dot_0, q_ddot_0 = util.create_robot(robot_type)
     planner = util.create_planner(planner_type, robot_type)
     controller = util.create_controller(controller_type, robot_params)
 
     sim = Sim(planner, controller, robot, params.ramp_force_params())
-    ts, u, F, F_r, f_e, q, q_dot, q_r_dot, V, V_dot = sim.run(q_0, q_dot_0, params.q_r.copy(), params.q_r_dot.copy(), sim_time=sim_time, dt=dt)  # run simulation
+    ts, u, F, F_r, f_e, q, q_dot, q_r_dot, V, V_dot = sim.run(q_0, q_dot_0, q_ddot_0, params.q_r.copy(), params.q_r_dot.copy(), params.q_r_ddot.copy(), sim_time=sim_time, dt=dt)  # run simulation
     us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs, V_dots =  np.concatenate(u,axis=1), np.concatenate(F,axis=1), (F_r), np.concatenate(f_e,axis=1), np.concatenate(q,axis=1), np.concatenate(q_dot,axis=1), (q_r_dot), np.concatenate(V,axis=1), np.concatenate(V_dot,axis=1)
     if plot: plot_results(planner, controller, robot, ts, us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs)
     if return_data: return ts, us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs
@@ -88,7 +88,7 @@ def plot_results(planner, controller, robot, ts, us, Fs, F_rs, f_es, qs, q_dots,
     robot_type = robot.__class__.__name__
     controller_type = controller.__class__.__name__
     planner_type = planner.__class__.__name__
-    qs, q_dots, q_Ts, q_T_dots = util.get_config_and_task_state_vectorized(robot_type, qs, q_dots)
+    qs, q_dots, q_Ts, q_T_dots = util.get_config_and_task_state_vectorized(robot, qs, q_dots)
     if controller_type in [util.ControllerInfo.PVFC.value, util.ControllerInfo.AUGMENTEDPD.value]: 
         plotter = plot_augmented_sim_results(planner, controller, robot, ts, Fs, F_rs, f_es, qs, q_dots, q_Ts, q_T_dots, q_r_dots, Vs)
     else: plotter = plot_sim_results(planner, controller, robot, ts, q_T_dots, Vs)
@@ -110,8 +110,8 @@ def run_velocity_field_viz(planner_type, robot_type):
 if __name__ == '__main__':
     robot_type: util.RobotInfo = util.RobotInfo.AM
     planner_type: util.PlannerInfo = util.PlannerInfo.HORIZONTAL
-    controller_type: util.ControllerInfo = util.ControllerInfo.PVFC
+    # controller_type: util.ControllerInfo = util.ControllerInfo.PVFC
     # run_sim(robot_type, planner_type, controller_type, sim_time=60, plot=True, return_data=False)
     controller_types = [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]  # define which controllers to compare
-    run_tracking_performance_comparo(robot_type, planner_type, controller_types, sim_time=30, dt=0.01, gen_data=False)  # runs comparo for all controllers
+    run_tracking_performance_comparo(robot_type, planner_type, controller_types, sim_time=30, dt=0.01, gen_data=True)  # runs comparo for all controllers
     # run_velocity_field_viz(planner_type, robot_type)  # to visualize the velocity field

@@ -66,16 +66,16 @@ def computeTransforms(q, q_dot, tool_length):
         [0, 0, 0, tool_length*np.sin(q[3,0])*q_dot[3,0]]])
     return K, J, J_dot
 
-def configToTask(q, q_dot, tool_length):
+def configToTask(q, q_dot, tool_length, q_ddot=None):
     '''
     input: 
         state and AM tool length - q, q_dot, tool_length
     output: 
         tool-tip position and velocity - q_T, q_T_dot
     '''
-    K, J, _ = computeTransforms(q, q_dot, tool_length)
-
-    return K + q[:2], J@q_dot
+    K, J, J_dot = computeTransforms(q, q_dot, tool_length)
+    if isinstance(q_ddot, type(None)): return K + q[:2], J@q_dot
+    return K + q[:2], J@q_dot, J_dot@q_dot + J@q_ddot
     
 def decomposeThrustVector(Lambda):
     '''
@@ -112,8 +112,8 @@ class ControllerInfo(Enum):
     PD = 'PDControl'
 
 _robots = {
-        RobotInfo.AM: (AerialManipulator, params.AM_params(), params.AM_q, params.AM_q_dot),
-        RobotInfo.QUAD: (Quadrotor, params.quadrotor_params(), params.quad_q, params.quad_q_dot)
+        RobotInfo.AM: (AerialManipulator, params.AM_params(), params.AM_q, params.AM_q_dot, params.AM_q_ddot),
+        RobotInfo.QUAD: (Quadrotor, params.quadrotor_params(), params.quad_q, params.quad_q_dot, params.quad_q_ddot)
     }
 
 _base_robot_planners = {
@@ -134,8 +134,8 @@ _controllers = {
     }
 
 def create_robot(robot: RobotInfo) -> Robot:
-    robot_class, robot_params, robot_init_p, robot_init_v = _robots.get(robot)
-    return robot_class(robot_params), robot_params, robot_init_p.copy(), robot_init_v.copy()
+    robot_class, robot_params, robot_init_p, robot_init_v, robot_init_a = _robots.get(robot)
+    return robot_class(robot_params), robot_params, robot_init_p.copy(), robot_init_v.copy(), robot_init_a.copy()
 
 def create_planner(plan: PlannerInfo, robot: RobotInfo) -> VelocityPlanner:
     base_robot_planner_params = _base_robot_planners.get(robot)
@@ -157,10 +157,10 @@ def create_fig(rows,cols,figsize=(16,9),sharex=True):
     if rows==1 and cols==1: ax = np.array([ax])
     return fig, ax
 
-def get_config_and_task_state_vectorized(robot_type, qs, q_dots, tool_length):
-    if robot_type==RobotInfo.QUAD.value.robot_type: return qs, q_dots, qs[:2,:], q_dots[:2,:]
+def get_config_and_task_state_vectorized(robot, qs, q_dots):
+    if robot.__class__.__name__==RobotInfo.QUAD.value.robot_type: return qs, q_dots, qs[:2,:], q_dots[:2,:]
     else: 
-        q_Ts, q_T_dots = get_task_space_state_vectorized(qs, q_dots, tool_length)
+        q_Ts, q_T_dots = get_task_space_state_vectorized(qs, q_dots, robot.dynamics.tool_length)
         return qs, q_dots, q_Ts, q_T_dots
     
 def check_sim_module_compatiblity(robot_type, planner_type):

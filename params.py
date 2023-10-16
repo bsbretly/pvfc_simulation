@@ -5,14 +5,14 @@ DEG_TO_RAD = np.pi/180
 
 # Robot parameters
 m, I = 1.5, 4.856e-3 
-m_t, I_t, tool_length = .1, 1, 0.15
+m_t, I_t, tool_length = .1, 1., 0.15
 quadrotor_params = namedtuple('quadrotor_params', ['m', 'I'], defaults = (m, I))
 AM_params = namedtuple('AM_params', ['m', 'm_t', 'I', 'I_t', 'tool_length'], defaults = (m, m_t, I, I_t, tool_length))
 
 # Control parameters
-E_bar, m_r, gamma = 100., .1, 1.  # passivity-based controller
+E_bar, m_r, gamma = 100., .1, 5.  # passivity-based controller
 theta_K_p, theta_K_d = 200., 20.  # attitude controller
-K_p, K_d = .5, .4  # PD contrller
+K_p, K_d = 5., 0.  # PD controller
 attitude_control_params = namedtuple('attitude_control_params', ['theta_K_p', 'theta_K_d'], defaults=(theta_K_p, theta_K_d))
 passive_params = namedtuple('passive_params', ['m_r', 'E_bar', 'gamma'], defaults=(m_r, E_bar, gamma))
 pd_params = namedtuple('pd_params', ['K_p', 'K_d'], defaults=(K_p, K_d))
@@ -53,7 +53,11 @@ up_ramp_planner_params = namedtuple('up_ramp_planner_params', ['delta', 'p1', 'p
 super_quadratic_params = namedtuple('super_quadratic_params', ['obs_x', 'obs_z', 'obs_m', 'obs_n', 'obs_L', 'obs_len'], defaults=(obs_x, obs_z, obs_m, obs_n, obs_L, obs_len))
 
 # initial conditions
-AM_q, AM_q_dot = np.array([[0., .2, 0.*DEG_TO_RAD, 90.*DEG_TO_RAD]]).T, np.array([[0.1 , -0.01, 0., 0.]]).T  # q = [x, z, theta, Beta]^T
-quad_q, quad_q_dot = np.array([[0., 0., 0.*DEG_TO_RAD]]).T, np.array([[0. , 0.05, 0.]]).T  # q = [x, z, theta]^T
-q_r, q_r_dot = np.array(0.), np.array(0.)
+AM_q = np.array([[0., .2, 0.*DEG_TO_RAD, 90.*DEG_TO_RAD]]).T  # q = [x, z, theta, Beta]^T
+AM_q_dot = np.array([[0.1 , -0.01, 0., 0.]]).T 
+AM_q_ddot = np.array([[0. , 0., 0., 0.]]).T
+quad_q = np.array([[0., 0., 0.*DEG_TO_RAD]]).T  # q = [x, z, theta]^T
+quad_q_dot = np.array([[0., 0.05, 0.]]).T
+quad_q_ddot = np.array([[0. , 0., 0.]]).T
+q_r, q_r_dot, q_r_ddot = np.array(0.), np.array(0.), np.array(0.)
 
