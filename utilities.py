@@ -168,7 +168,7 @@ def check_sim_module_compatiblity(robot_type, planner_type):
         raise ValueError('Robot '+'['+robot_type+']'+' can not be run with planner '+'['+planner_type+']'+': please choose a differnt combination.')
     else: pass
 
-def check_tracking_module_compatiblity(robot_type):
-    if robot_type==RobotInfo.QUAD: 
-        raise ValueError('Tracking performance for the '+'['+robot_type.value.robot_type+']'+' is not yet implemented.')
-    else: pass
+# def check_tracking_module_compatiblity(robot_type):
+#     if robot_type==RobotInfo.QUAD: 
+#         raise ValueError('Tracking performance for the '+'['+robot_type.value.robot_type+']'+' is not yet implemented.')
+#     else: pass

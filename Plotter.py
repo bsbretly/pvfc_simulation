@@ -107,9 +107,9 @@ class PlotSimResults:
     
 class PlotPassiveSimResults(PlotSimResults):
     def __init__(self, planner, controller, robot):
-        if robot.__class__.__name__==util.RobotInfo.AM.value.robot_type: self.m = robot.dynamics.m_t  # task space
-        elif robot.__class__.__name__==util.RobotInfo.QUAD.value.robot_type: self.m = robot.dynamics.m_total  # configuration space
-        else: raise NotImplementedError("Unknown robot class in Plotter!")
+        # if robot.__class__.__name__==util.RobotInfo.AM.value.robot_type: self.m = robot.dynamics.m_t  # task space
+        # elif robot.__class__.__name__==util.RobotInfo.QUAD.value.robot_type: self.m = robot.dynamics.m_total  # configuration space
+        # else: raise NotImplementedError("Unknown robot class in Plotter!")
         super().__init__(planner, controller, robot)
 
     def plotVelocityTracking(self, fig, ax, ts, qs, q_dots, q_T_dots, q_r_dots, Vs):
@@ -238,6 +238,7 @@ class ControlComparison(PlotPassiveSimResults):
         fp.setupPlotParams()
     
     def plot_beta(self, fig, axs, ts, qs, q_dots, q_T_dots, q_r_dots):
+        if np.all(q_dots==q_T_dots): qs, q_dots, q_T_dots = qs[:-1,:], q_dots[:-1,:], q_T_dots[:-1,:]  # quadrotor controlled in x,z space
         K_bar = self.compute_kinetic_energy_vectorized(qs, q_dots, q_T_dots, q_r_dots)[-1]
         beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
         for ax in axs: ax.plot(ts, beta, label=r'$\beta$')   
@@ -245,11 +246,17 @@ class ControlComparison(PlotPassiveSimResults):
 
     def plot_error(self, fig, ax, control_type, ts, qs, q_dots, q_T_dots, q_r_dots, Vs):
         dim = ['x', 'z']
-        if control_type in [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]:  # augmented controllers
+        # axis0 = ax[0]
+        # axis1 = ax[1] 
+        if np.all(q_dots==q_T_dots): qs, q_dots, q_T_dots = qs[:-1,:], q_dots[:-1,:], q_T_dots[:-1,:]  # quadrotor controlled in x,z space
+        if control_type in [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]:
             K_bar = self.compute_kinetic_energy_vectorized(qs, q_dots, q_T_dots, q_r_dots)[-1]
             beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
             q_T_bar_dots = np.vstack((q_T_dots, q_r_dots))
             beta_error = q_T_bar_dots - beta*Vs
+            # if control_type==util.ControllerInfo.AUGMENTEDPD: 
+            #     axis0 = ax[0].twinx()
+            #     axis1 = ax[1].twinx()
             ax[0].plot(ts, beta_error[0], label=r'$\bar{e}_{\beta,'+dim[0]+',' + control_type.name + r'}$')
             # ax[0].plot(ts, beta, label=r'$\beta_{' + control_type.name + r'}$')
             ax[1].plot(ts, beta_error[1], label=r'$\bar{e}_{\beta,'+dim[1]+',' + control_type.name + r'}$')
@@ -266,24 +273,35 @@ class ControlComparison(PlotPassiveSimResults):
         ax[1].legend()
         ax[1].set_xlabel(r'$t\ [s]$', fontsize=30)
         plt.xlim(0,max(np.rint(ts)))
+
+        # # Ensure the y=0 lines match
+        # axis0_ylim = axis0.get_ylim()
+        # axis1_ylim = axis1.get_ylim()
+
+        # # Ratio between the y-ranges of the two axes
+        # ratio = (axis0_ylim[1] - axis0_ylim[0]) / (axis1_ylim[1] - axis1_ylim[0])
+
+        # # Adjust ax2's limits
+        # axis1.set_ylim(axis0_ylim[0] / ratio, axis0_ylim[1] / ratio)
         return fig, ax
 
     def plot_comparo(self, plot_error=True, plot_velocity_tracking=True, controller_types=None):
         if controller_types == None: raise NotImplementedError("Must specify controller types to plot.")
-        fig1, axs1 = util.create_fig(2, 1)
+        fig1, ax1 = util.create_fig(2, 1)
         error_title = 'Error Comparison'
         for i, control_type in enumerate(controller_types):
             self.controller = self.controllers[i]  # controller object
-            if plot_error:    
-                fig1, axs1 = self.plot_error(fig1, axs1, control_type, self.data['ts'][control_type], self.data['qs'][control_type], self.data['q_dots'][control_type], self.data['q_T_dots'][control_type], self.data['q_r_dots'][control_type], self.data['Vs'][control_type])
+            if plot_error:
+                fig1, ax1 = self.plot_error(fig1, ax1, control_type, self.data['ts'][control_type], self.data['qs'][control_type], self.data['q_dots'][control_type], self.data['q_T_dots'][control_type], self.data['q_r_dots'][control_type], self.data['Vs'][control_type])
             if plot_velocity_tracking:
                 fig, axs = util.create_fig(2, 1)
                 fig, axs = self.plot_velocity(fig, axs, self.data['ts'][control_type], self.data['q_T_dots'][control_type], self.data['Vs'][control_type])
-                if control_type != util.ControllerInfo.PD: fig, axs = self.plot_beta(fig, axs, self.data['ts'][control_type], self.data['qs'][control_type], self.data['q_dots'][control_type], self.data['q_T_dots'][control_type], self.data['q_r_dots'][control_type])
+                # if control_type != util.ControllerInfo.PD: fig, axs = self.plot_beta(fig, axs, self.data['ts'][control_type], self.data['qs'][control_type], self.data['q_dots'][control_type], self.data['q_T_dots'][control_type], self.data['q_r_dots'][control_type])
                 fig.suptitle(control_type.value, fontsize=30)
                 for ax in axs: ax.legend()
             else: raise NotImplementedError("Nothing to plot: set one of the plotting flags to True.")
         fig1.suptitle(error_title, fontsize=30)
+        plt.show()
             
 
 class VizVelocityField(PlotSimResults):

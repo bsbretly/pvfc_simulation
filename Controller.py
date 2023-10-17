@@ -90,14 +90,14 @@ class PDControl(BaseControl):
         super().__init__(robot_params, attitude_control_params)
         self.K_p, self.K_d = args[0]
 
-    def computeControlAction(self, q_dot, q_r, q_r_dot, q_r_ddot, V_bar, V_bar_dot, M, C, dt):
+    def computeControlAction(self, q_dot, q_ddot, q_r, q_r_dot, q_r_ddot, V_bar, V_bar_dot, M, C, dt):
         ''' 
         input: 
             robot state, reservoir state, desired velocity field, dynamics, time step
         output: 
             control action to the robot, reservoir and updated reservoir state, - tau, tau_r, q_r, q_r_dot
         '''       
-        tau = M@V_bar_dot[:2] + C@V_bar[:2] - self.K_p*(q_dot - V_bar[:2])
+        tau = M@V_bar_dot[:2] + C@V_bar[:2] + self.K_p*(V_bar[:2] - q_dot)
         tau_r = np.array(0.)  # no reservoir control
         return tau, tau_r, q_r, q_r_dot, q_r_ddot
 
@@ -107,10 +107,10 @@ class AugmentedPDControl(PassiveBaseControl):
         super().__init__(robot_params, attitude_control_params, args[0])
         self.K_p, self.K_d = args[1]
 
-    def computeControlAction(self, q_dot, q_ddot, q_r, q_r_dot, q_r_ddot, V_bar, V_bar_dot, M, C, dt):
+    def computeControlAction(self, q_dot, q_ddot, q_r, q_r_dot, q_r_ddot, V_bar, V_bar_dot, M_bar, C_bar, dt):
         qbar_dot = np.vstack([q_dot, q_r_dot])
         qbar_ddot = np.vstack([q_ddot, q_r_ddot])
-        tau_bar = M@V_bar_dot + C@V_bar + self.K_p*(V_bar - qbar_dot) + self.K_d*(V_bar_dot - qbar_ddot)
+        tau_bar = M_bar@V_bar_dot + C_bar@V_bar + self.K_p*(V_bar - qbar_dot) + self.K_d*(V_bar_dot - qbar_ddot)
         q_r, q_r_dot, qbar_ddot = self.updateReservoirState(tau_bar[-1,-1], q_r, q_r_dot, dt)
         return tau_bar[:2,:], tau_bar[-1,-1], q_r, q_r_dot, q_r_ddot
  
