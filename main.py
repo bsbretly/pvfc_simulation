@@ -61,11 +61,11 @@ def plot_augmented_sim_results(planner, controller, robot, ts, Fs, F_rs, f_es, q
     fig1, ax1 = util.create_fig(2, 1)
     plotter.plotVelocityTracking(fig1, ax1, ts, qs, q_dots, q_T_dots, q_r_dots, Vs)
     
-    fig2, ax2 = util.create_fig(2, 1)
-    plotter.plotPowerAnnihilation(fig2, ax2, ts, Fs, F_rs, q_T_dots, q_r_dots)
+    # fig2, ax2 = util.create_fig(2, 1)
+    # plotter.plotPowerAnnihilation(fig2, ax2, ts, Fs, F_rs, q_T_dots, q_r_dots)
     
-    fig3, ax3 = util.create_fig(3, 1)
-    plotter.plotPassivity(fig3, ax3, ts, qs, q_dots, q_Ts, q_T_dots, q_r_dots, f_es)
+    # fig3, ax3 = util.create_fig(3, 1)
+    # plotter.plotPassivity(fig3, ax3, ts, qs, q_dots, q_Ts, q_T_dots, q_r_dots, f_es)
     return plotter
 
 def plot_sim_results(planner, controller, robot, ts, q_dots, Vs):
@@ -110,8 +110,8 @@ def run_velocity_field_viz(planner_type, robot_type):
 if __name__ == '__main__':
     robot_type: util.RobotInfo = util.RobotInfo.QUAD
     planner_type: util.PlannerInfo = util.PlannerInfo.HORIZONTAL
-    # controller_type: util.ControllerInfo = util.ControllerInfo.AUGMENTEDPD
+    controller_type: util.ControllerInfo = util.ControllerInfo.PVFC
     # run_sim(robot_type, planner_type, controller_type, sim_time=60, plot=True, return_data=False)
     controller_types = [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]#util.ControllerInfo.AUGMENTEDPD]  # define which controllers to compare
-    run_tracking_performance_comparo(robot_type, planner_type, controller_types, sim_time=5, dt=0.01, gen_data=True)  # runs comparo for all controllers
+    run_tracking_performance_comparo(robot_type, planner_type, controller_types, sim_time=20, dt=0.01, gen_data=True)  # runs comparo for all controllers
     # run_velocity_field_viz(planner_type, robot_type)  # to visualize the velocity field

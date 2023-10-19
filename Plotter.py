@@ -114,18 +114,37 @@ class PlotPassiveSimResults(PlotSimResults):
 
     def plotVelocityTracking(self, fig, ax, ts, qs, q_dots, q_T_dots, q_r_dots, Vs):
         # fig, ax = super().plotVelocityTracking(fig, ax, ts, q_T_dots, Vs)
-        K_bar = self.compute_kinetic_energy_vectorized(qs, q_dots, q_T_dots, q_r_dots)[-1]
+        K, K_r, K_bar = self.compute_kinetic_energy_vectorized(qs, q_dots, q_T_dots, q_r_dots)
         beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
         q_bar_dots = np.vstack((q_T_dots, q_r_dots))
         beta_error = q_bar_dots - beta*Vs
-        ax[0].plot(ts, beta_error[0], label=r'$e_{\beta,x}$')
-        # ax[0].plot(ts, beta*Vs[0,:], label=r'$\beta V_x$')  # plot Beta velocity tracking
+        error = q_bar_dots - Vs
+        if self.controller.__class__.__name__==util.ControllerInfo.PVFC.value: 
+            beta_error = q_bar_dots - beta*Vs
+            ax[0].plot(ts, beta_error[0], label=r'$e_{\beta,x}$')
+            # ax[1].plot(ts, beta_error[1], label=r'$e_{\beta,y}$')
+        else: 
+            # ax[0].plot(ts, error[0], label=r'$e_x$')
+            ax[1].plot(ts, error[0], label=r'$e_x$')
+        # ax[0].plot(ts, K, label=r'$K$')
+        # ax[0].plot(ts, Vs[0,:], label=r'$V_x$')
+        # ax[0].plot(ts, q_dots[0,:], label=r'$\dot{x}$')    
+        # ax[0].plot(ts, beta, label=r'$\beta$')
         ax[0].plot(ts, np.zeros_like(ts), 'r--')
-        ax[1].plot(ts, beta_error[1], label=r'$e_{\beta,z}$')
-        # ax[1].plot(ts, beta*Vs[1,:], label=r'$\beta V_z$')
+        
+        # ax[1].plot(ts, Vs[1,:], label=r'$V_y$')
+        # ax[1].plot(ts, q_dots[1,:], label=r'$\dot{y}$')    
+        # ax[1].plot(ts, beta, label=r'$\beta$')
         ax[1].plot(ts, np.zeros_like(ts), 'r--')
+
+        # ax[2].plot(ts, error[-1], label=r'$e_r$')
+        # ax[2].plot(ts, Vs[-1,:], label=r'$V_r$')
+        # ax[2].plot(ts, q_dots[-1,:], label=r'$\dot{r}$')
+        # ax[2].plot(ts, np.zeros_like(ts), 'r--')
+
         ax[0].legend()
         ax[1].legend()
+        # ax[2].legend()
         return fig, ax
     
     def plotPassivity(self, fig, ax, ts, qs, q_dots, q_Ts, q_T_dots, q_r_dots, f_es):
@@ -249,7 +268,7 @@ class ControlComparison(PlotPassiveSimResults):
         # axis0 = ax[0]
         # axis1 = ax[1] 
         if np.all(q_dots==q_T_dots): qs, q_dots, q_T_dots = qs[:-1,:], q_dots[:-1,:], q_T_dots[:-1,:]  # quadrotor controlled in x,z space
-        if control_type in [util.ControllerInfo.PVFC, util.ControllerInfo.AUGMENTEDPD]:
+        if control_type in [util.ControllerInfo.PVFC]:
             K_bar = self.compute_kinetic_energy_vectorized(qs, q_dots, q_T_dots, q_r_dots)[-1]
             beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
             q_T_bar_dots = np.vstack((q_T_dots, q_r_dots))
@@ -257,33 +276,64 @@ class ControlComparison(PlotPassiveSimResults):
             # if control_type==util.ControllerInfo.AUGMENTEDPD: 
             #     axis0 = ax[0].twinx()
             #     axis1 = ax[1].twinx()
-            ax[0].plot(ts, beta_error[0], label=r'$\bar{e}_{\beta,'+dim[0]+',' + control_type.name + r'}$')
+            ax[0].plot(ts, beta_error[0], 'g', label=r'$\bar{e}_{\beta,'+dim[0]+',' + control_type.name + r'}$')
             # ax[0].plot(ts, beta, label=r'$\beta_{' + control_type.name + r'}$')
-            ax[1].plot(ts, beta_error[1], label=r'$\bar{e}_{\beta,'+dim[1]+',' + control_type.name + r'}$')
+            ax[1].plot(ts, beta_error[1], 'g', label=r'$\bar{e}_{\beta,'+dim[1]+',' + control_type.name + r'}$')
             # ax[1].plot(ts, beta, label=r'$\beta_{' + control_type.name + r'}$')
+            # ax[0].legend()
+            # ax[1].legend()
         else:
             error = q_T_dots - Vs[:-1,:]
-            ax[0].plot(ts, error[0], label=r'$e_{' +dim[0]+','+ control_type.name + r'}$')
-            ax[1].plot(ts, error[1], label=r'$e_{' +dim[1]+','+ control_type.name + r'}$')
+            ax_0 = ax[0].twinx()
+            ax_1 = ax[1].twinx()
+            # ax[0].plot(ts, error[0], label=r'$e_{' +dim[0]+','+ control_type.name + r'}$')
+            ax_0.plot(ts, error[0], 'b', label=r'$e_{' +dim[0]+','+ control_type.name + r'}$')
+            ax_1.plot(ts, error[1], 'b', label=r'$e_{' +dim[1]+','+ control_type.name + r'}$')
+            # ax_0.legend()
+            # ax_1.legend()
+            self.align_y_axes(ax[0], ax_0)
+            self.align_y_axes(ax[1], ax_1)
+            # Using the function
+            self.combine_legends(ax[0], ax_0)
+            self.combine_legends(ax[1], ax_1)
         ax[0].plot(ts, np.zeros_like(ts), 'r--')
         ax[1].plot(ts, np.zeros_like(ts), 'r--')
-        ax[0].set_ylabel(r'$e_'+dim[0]+'\ [m]$', fontsize=30)
-        ax[1].set_ylabel(r'$e_'+dim[1]+'\ [m]$', fontsize=30)
-        ax[0].legend()
-        ax[1].legend()
+        # ax[0].set_ylabel(r'$e_'+dim[0]+'\ [m]$', fontsize=30)
+        # ax[1].set_ylabel(r'$e_'+dim[1]+'\ [m]$', fontsize=30)
+       
         ax[1].set_xlabel(r'$t\ [s]$', fontsize=30)
+        
         plt.xlim(0,max(np.rint(ts)))
-
-        # # Ensure the y=0 lines match
-        # axis0_ylim = axis0.get_ylim()
-        # axis1_ylim = axis1.get_ylim()
-
-        # # Ratio between the y-ranges of the two axes
-        # ratio = (axis0_ylim[1] - axis0_ylim[0]) / (axis1_ylim[1] - axis1_ylim[0])
-
-        # # Adjust ax2's limits
-        # axis1.set_ylim(axis0_ylim[0] / ratio, axis0_ylim[1] / ratio)
         return fig, ax
+    
+    def combine_legends(self, ax, ax_twin):
+        """Combine legends from ax and ax_twin and display on ax."""
+        # Get the legends from both axes
+        lines, labels = ax.get_legend_handles_labels()
+        lines_twin, labels_twin = ax_twin.get_legend_handles_labels()
+        
+        # Combine legends
+        ax.legend(lines + lines_twin, labels + labels_twin, loc='upper right')
+
+    def align_y_axes(self, ax1, ax2):
+        """Align zeros of the two axes."""
+        y1_l, y1_u = ax1.get_ylim()
+        y2_l, y2_u = ax2.get_ylim()
+
+        # Proportion of y1 and y2 ranges that is below zero
+        prop_y1 = abs(y1_l) / (abs(y1_l) + abs(y1_u))
+        prop_y2 = abs(y2_l) / (abs(y2_l) + abs(y2_u))
+        
+        # Calculate the new limits based on the proportion of the other axis
+        new_y1_l = -prop_y2 * (y1_u - y1_l)
+        new_y1_u = (1 - prop_y2) * (y1_u - y1_l)
+        new_y2_l = -prop_y1 * (y2_u - y2_l)
+        new_y2_u = (1 - prop_y1) * (y2_u - y2_l)
+        
+        # Set the new limits ensuring no data point is clipped
+        ax1.set_ylim(min(new_y1_l, y1_l), max(new_y1_u, y1_u))
+        ax2.set_ylim(min(new_y2_l, y2_l), max(new_y2_u, y2_u))
+
 
     def plot_comparo(self, plot_error=True, plot_velocity_tracking=True, controller_types=None):
         if controller_types == None: raise NotImplementedError("Must specify controller types to plot.")

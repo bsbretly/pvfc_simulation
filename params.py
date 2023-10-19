@@ -10,7 +10,9 @@ quadrotor_params = namedtuple('quadrotor_params', ['m', 'I'], defaults = (m, I))
 AM_params = namedtuple('AM_params', ['m', 'm_t', 'I', 'I_t', 'tool_length'], defaults = (m, m_t, I, I_t, tool_length))
 
 # Control parameters
-E_bar, m_r, gamma = 100., .1, 5.  # passivity-based controller
+E_bar = 100.
+m_r = .1 
+gamma = 10.  # passivity-based controller
 theta_K_p, theta_K_d = 200., 20.  # attitude controller
 K_p, K_d = 10., 0.  # PD controller
 attitude_control_params = namedtuple('attitude_control_params', ['theta_K_p', 'theta_K_d'], defaults=(theta_K_p, theta_K_d))
@@ -31,7 +33,7 @@ ramp_force_params = namedtuple('ramp_force_params', ['ramp_k', 'ramp_mu'], defau
 # Planner parameters
 point_normal_gain, point_tangent_gain = 1., 1.
 z_intercept = 0.
-horizontal_normal_gain, horizontal_tangent_gain = .1, .1
+horizontal_normal_gain, horizontal_tangent_gain = 1., 1.
 up_ramp_normal_gain, up_ramp_tangent_gain = 1., 1.
 p1, p2 = [0.,0.], [5.,.25] # two points on the ramp
 delta = 0.1 # distance "beyond" surface to facilitate interaction [m]
