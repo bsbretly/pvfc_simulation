@@ -282,15 +282,19 @@ class ControlComparison(PlotPassiveSimResults):
             # ax[1].plot(ts, beta, label=r'$\beta_{' + control_type.name + r'}$')
             # ax[0].legend()
             # ax[1].legend()
+            ax[0].set_ylabel(r'$\bar{e}_{\beta,'+dim[0]+',' + control_type.name + r'}$', color='g', fontsize=30)
+            ax[1].set_ylabel(r'$\bar{e}_{\beta,'+dim[1]+',' + control_type.name + r'}$', color='g', fontsize=30)
         else:
-            error = q_T_dots - Vs[:-1,:]
+            error = (q_T_dots - Vs[:-1,:])
             ax_0 = ax[0].twinx()
             ax_1 = ax[1].twinx()
             # ax[0].plot(ts, error[0], label=r'$e_{' +dim[0]+','+ control_type.name + r'}$')
             ax_0.plot(ts, error[0], 'b', label=r'$e_{' +dim[0]+','+ control_type.name + r'}$')
-            ax_1.plot(ts, error[1], 'b', label=r'$e_{' +dim[1]+','+ control_type.name + r'}$')
+            ax_1.plot(ts, -error[1], 'b', label=r'$e_{' +dim[1]+','+ control_type.name + r'}$')
             # ax_0.legend()
             # ax_1.legend()
+            ax_0.set_ylabel(r'$e_{' +dim[0]+','+ control_type.name + r'}$', color='b', fontsize=30)
+            ax_1.set_ylabel(r'$e_{' +dim[1]+','+ control_type.name + r'}$', color='b', fontsize=30)
             self.align_y_axes(ax[0], ax_0)
             self.align_y_axes(ax[1], ax_1)
             # Using the function
@@ -313,7 +317,7 @@ class ControlComparison(PlotPassiveSimResults):
         lines_twin, labels_twin = ax_twin.get_legend_handles_labels()
         
         # Combine legends
-        ax.legend(lines + lines_twin, labels + labels_twin, loc='upper right')
+        ax.legend(lines + lines_twin, labels + labels_twin)
 
     def align_y_axes(self, ax1, ax2):
         """Align zeros of the two axes."""
