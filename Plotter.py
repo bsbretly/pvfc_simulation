@@ -2,7 +2,7 @@ import matplotlib.lines as mlines
 import numpy as np
 import formatPlots as fp
 import matplotlib.pyplot as plt
-import utilities as util
+import sim_utilities as util
 plt.rcParams['text.usetex'] = True
 plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
 

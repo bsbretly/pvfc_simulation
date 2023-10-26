@@ -1,6 +1,6 @@
 import numpy as np
-import utilities as util
-from Dynamics import QuadrotorDynamics, AerialManipulatorDynamics
+import pvfc_core.utilities as util
+from pvfc_core.Dynamics import QuadrotorDynamics, AerialManipulatorDynamics
 from params import quadrotor_params, AM_params
 
 class Robot:
