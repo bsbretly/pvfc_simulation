@@ -1,7 +1,7 @@
 import numpy as np
 import sympy as sp
 import pvfc_core.utilities as util
-from params import base_quad_planner_params, base_AM_planner_params
+from pvfc_core.params import base_quad_planner_params, base_AM_planner_params
 DEG_TO_RAD = np.pi/180
 RAD_TO_DEG = 1/DEG_TO_RAD
 
