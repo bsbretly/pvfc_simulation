@@ -3,7 +3,7 @@ from collections import namedtuple
 from pvfc_core.Planner import VelocityPlanner, PointVelocityField, HorinzontalLineVelocityField, UpRampVelocityField, SuperQuadraticField
 from pvfc_core.Controller import BaseControl, PassiveBaseControl, PVFC, PDControl, AugmentedPDControl
 from Robot import Robot, Quadrotor, AerialManipulator
-import params
+import pvfc_core.params as params
 import matplotlib.pyplot as plt
 import pvfc_core.utilities as util
 import numpy as np

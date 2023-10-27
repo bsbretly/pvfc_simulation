@@ -1,7 +1,7 @@
 import numpy as np
 import pvfc_core.utilities as util
 from pvfc_core.Dynamics import QuadrotorDynamics, AerialManipulatorDynamics
-from params import quadrotor_params, AM_params
+from pvfc_core.params import quadrotor_params, AM_params
 
 class Robot:
     def __init__(self, robot_parameters):
@@ -15,7 +15,7 @@ class Robot:
         q_ddot = np.linalg.inv(M)@(B@u + F_e - G - C@q_dot)
         q_dot += q_ddot*dt 
         q += q_dot*dt 
-        return q, q_dot, q_ddot
+        return q, q_dot
 
 
 class Quadrotor(Robot):

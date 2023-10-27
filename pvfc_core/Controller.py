@@ -51,18 +51,18 @@ class BaseControl:
     def computeDynamics(self, q, q_dot):
         return self.dynamics.computeDynamics(q, q_dot)
     
-    def step(self, q, q_dot, q_ddot, q_r, q_r_dot, q_r_ddot, V_bar, V_bar_dot, dt):
+    def step(self, q, q_dot, q_r, q_r_dot, V_bar, V_bar_dot, dt):
         M, C = self.computeDynamics(q, q_dot)
         if self.dynamics.__class__.__name__==AerialManipulatorTaskDynamics.__name__:  # AM in task space
-            _, q_T_dot, q_T_ddot = util.configToTask(q, q_dot, self.dynamics.tool_length, q_ddot=q_ddot)
-            F_T, f_r, q_r, q_r_dot, q_r_ddot = self.computeControlAction(q_T_dot, q_T_ddot, q_r, q_r_dot, q_r_ddot, V_bar, V_bar_dot, M, C, dt)
+            _, q_T_dot = util.configToTask(q, q_dot, self.dynamics.tool_length)
+            F_T, f_r, q_r, q_r_dot = self.computeControlAction(q_T_dot, q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt)
             F = self.computeConfigForceControl(q, q_dot, F_T)
             u = self.computeAttitudeControl(q, q_dot, F, task_space=True)
-            return u, F_T, f_r, q_r, q_r_dot, q_r_ddot
+            return u, F_T, f_r, q_r, q_r_dot
         elif self.dynamics.__class__.__name__==QuadrotorTranslationalDynamics.__name__:  # Quad in configuration space
-            F, f_r, q_r, q_r_dot, q_r_ddot = self.computeControlAction(q_dot[:-1,:], q_ddot[:-1,:], q_r, q_r_dot, q_r_ddot, V_bar, V_bar_dot, M, C, dt)
+            F, f_r, q_r, q_r_dot = self.computeControlAction(q_dot[:-1,:], q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt)
             u = self.computeAttitudeControl(q, q_dot, F, task_space=False)
-            return u, F, f_r, q_r, q_r_dot, q_r_ddot
+            return u, F, f_r, q_r, q_r_dot
         else:    
             raise NotImplementedError("Dynamics not defined for the controller.")
         
@@ -79,7 +79,7 @@ class PassiveBaseControl(BaseControl):
         q_r_ddot = tau_r / self.m_r
         q_r_dot += q_r_ddot*dt
         q_r += q_r_dot*dt
-        return q_r, q_r_dot, q_r_ddot
+        return q_r, q_r_dot
     
     def computeDynamics(self, q, q_dot):
         M, C = super().computeDynamics(q, q_dot)
@@ -91,7 +91,7 @@ class PDControl(BaseControl):
         super().__init__(robot_params, attitude_control_params)
         self.K_p, self.K_d = args[0]
 
-    def computeControlAction(self, q_dot, q_ddot, q_r, q_r_dot, q_r_ddot, V_bar, V_bar_dot, M, C, dt):
+    def computeControlAction(self, q_dot, q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt):
         ''' 
         input: 
             robot state, reservoir state, desired velocity field, dynamics, time step
@@ -100,7 +100,7 @@ class PDControl(BaseControl):
         '''       
         tau = M@V_bar_dot[:2] + C@V_bar[:2] + self.K_p*(V_bar[:2] - q_dot)
         tau_r = np.array(0.)  # no reservoir control
-        return tau, tau_r, q_r, q_r_dot, q_r_ddot
+        return tau, tau_r, q_r, q_r_dot
 
 
 class AugmentedPDControl(PassiveBaseControl):
@@ -108,19 +108,18 @@ class AugmentedPDControl(PassiveBaseControl):
         super().__init__(robot_params, attitude_control_params, args[0])
         self.K_p, self.K_d = args[1]
 
-    def computeControlAction(self, q_dot, q_ddot, q_r, q_r_dot, q_r_ddot, V_bar, V_bar_dot, M_bar, C_bar, dt):
+    def computeControlAction(self, q_dot, q_r, q_r_dot, V_bar, V_bar_dot, M_bar, C_bar, dt):
         qbar_dot = np.vstack([q_dot, q_r_dot])
-        qbar_ddot = np.vstack([q_ddot, q_r_ddot])
-        tau_bar = M_bar@V_bar_dot + C_bar@V_bar + self.K_p*(V_bar - qbar_dot) + self.K_d*(V_bar_dot - qbar_ddot)
-        q_r, q_r_dot, qbar_ddot = self.updateReservoirState(tau_bar[-1,-1], q_r, q_r_dot, dt)
-        return tau_bar[:2,:], tau_bar[-1,-1], q_r, q_r_dot, q_r_ddot
+        tau_bar = M_bar@V_bar_dot + C_bar@V_bar + self.K_p*(V_bar - qbar_dot)
+        q_r, q_r_dot = self.updateReservoirState(tau_bar[-1,-1], q_r, q_r_dot, dt)
+        return tau_bar[:2,:], tau_bar[-1,-1], q_r, q_r_dot
  
 
 class PVFC(PassiveBaseControl):
     def __init__(self, robot_parameters, attitude_control_params, *args):
         super().__init__(robot_parameters, attitude_control_params, *args)
 
-    def computeControlAction(self, q_dot, q_ddot, q_r, q_r_dot, q_r_ddot, V_bar, V_bar_dot, M_bar, C_bar, dt):
+    def computeControlAction(self, q_dot, q_r, q_r_dot, V_bar, V_bar_dot, M_bar, C_bar, dt):
         ''' 
         input: 
             robot state, reservoir state, desired velocity field, dynamics, time step
@@ -134,6 +133,6 @@ class PVFC(PassiveBaseControl):
         tau_c = ((w_bar@P_bar.T - P_bar@w_bar.T)@(qbar_dot)) / (2 * self.E_bar)
         tau_f = self.gamma*(P_bar@p_bar.T - p_bar@P_bar.T)@(qbar_dot)
         tau_bar = tau_c + tau_f
-        q_r, q_r_dot, q_r_ddot = self.updateReservoirState(tau_bar[-1,-1], q_r, q_r_dot, dt)
-        return tau_bar[:2,:], tau_bar[-1,-1], q_r, q_r_dot, q_r_ddot
+        q_r, q_r_dot = self.updateReservoirState(tau_bar[-1,-1], q_r, q_r_dot, dt)
+        return tau_bar[:2,:], tau_bar[-1,-1], q_r, q_r_dot
     

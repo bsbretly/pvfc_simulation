@@ -26,7 +26,8 @@ def configToTask(q, q_dot, tool_length, q_ddot=None):
     '''
     K, J, J_dot = computeTransforms(q, q_dot, tool_length)
     if isinstance(q_ddot, type(None)): return K + q[:2], J@q_dot
-    return K + q[:2], J@q_dot, J_dot@q_dot + J@q_ddot
+    # Acceleration: J_dot@q_dot + J@q_ddot
+    return K + q[:2], J@q_dot 
     
 def decomposeThrustVector(Lambda):
     '''
