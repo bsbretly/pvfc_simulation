@@ -88,6 +88,7 @@ class VelocityPlanner:
     
 
 class ContourVelocityField(VelocityPlanner):
+    # Velocity field from https://ieeexplore.ieee.org/document/8779551
     def __init__(self, base_robot_planner_params, base_planner_params, planner_params, visualize=False):
         super().__init__(base_robot_planner_params, base_planner_params, planner_params, visualize=visualize)
     
@@ -96,7 +97,6 @@ class ContourVelocityField(VelocityPlanner):
     
 
 class PointVelocityField(ContourVelocityField):
-    # Velocity field from https://ieeexplore.ieee.org/document/8779551
     def __init__(self, base_robot_planner_params, base_point_planner_params, point_planner_params, visualize=False):
         super().__init__(base_robot_planner_params, base_point_planner_params, point_planner_params, visualize=visualize)
 
@@ -112,7 +112,6 @@ class PointVelocityField(ContourVelocityField):
 
 
 class HorinzontalLineVelocityField(ContourVelocityField):
-    # Velocity field from https://ieeexplore.ieee.org/document/8779551
     def __init__(self, base_robot_planner_params, base_planner_params, planner_params, visualize=False):
         super().__init__(base_robot_planner_params, base_planner_params, planner_params, visualize=visualize)
 
@@ -128,7 +127,6 @@ class HorinzontalLineVelocityField(ContourVelocityField):
 
 
 class UpRampVelocityField(ContourVelocityField):
-    # Velocity field from https://ieeexplore.ieee.org/document/8779551
     def __init__(self, base_robot_planner_params, base_planner_params, planner_params, visualize=False):
         super().__init__(base_robot_planner_params, base_planner_params, planner_params, visualize=visualize)
         
