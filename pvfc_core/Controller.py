@@ -17,11 +17,11 @@ class BaseControl:
         thrust, theta_d = util.decomposeThrustVector(Lambda)
         return np.array([thrust, theta_d]).T
         
-    def computeAttitudeControl(self, q, q_dot, tau, task_space=False):
-        thrust, theta_d = self.decomposeThrust(tau)
+    def computeAttitudeCommandAndControl(self, q, q_dot, F, task_space=False):
+        thrust, theta_d = self.decomposeThrust(F)  # Decompse thrust vector into thrust scalar and theta_d
         tau_theta_d = self.dynamics.I*(self.theta_K_p*(theta_d - q[2,0]) + self.theta_K_d*(0. - q_dot[2,0]))
-        if task_space: return np.array([[thrust, tau_theta_d + tau[-1,0], tau[-1,0]]]).T
-        else: return np.array([[thrust, tau_theta_d]]).T
+        if task_space: return np.array([[thrust, tau_theta_d + F[-1,0], F[-1,0]]]).T, [thrust, theta_d]
+        else: return np.array([[thrust, tau_theta_d]]).T, [thrust, theta_d]
     
     def computeConfigForceControl(self, q, q_dot, F_T):
         # Force-based control
@@ -57,12 +57,12 @@ class BaseControl:
             _, q_T_dot = util.configToTask(q, q_dot, self.dynamics.tool_length)
             F_T, f_r, q_r, q_r_dot = self.computeControlAction(q_T_dot, q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt)
             F = self.computeConfigForceControl(q, q_dot, F_T)
-            u = self.computeAttitudeControl(q, q_dot, F, task_space=True)
-            return u, F_T, f_r, q_r, q_r_dot
+            u, u_attitude = self.computeAttitudeCommandAndControl(q, q_dot, F, task_space=True)
+            return u, u_attitude, F_T, f_r, q_r, q_r_dot
         elif self.dynamics.__class__.__name__==QuadrotorTranslationalDynamics.__name__:  # Quad in configuration space
             F, f_r, q_r, q_r_dot = self.computeControlAction(q_dot[:-1,:], q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt)
-            u = self.computeAttitudeControl(q, q_dot, F, task_space=False)
-            return u, F, f_r, q_r, q_r_dot
+            u, u_attitude = self.computeAttitudeCommandAndControl(q, q_dot, F, task_space=False)
+            return u, u_attitude, F, f_r, q_r, q_r_dot
         else:    
             raise NotImplementedError("Dynamics not defined for the controller.")
         

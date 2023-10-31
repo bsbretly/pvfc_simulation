@@ -111,7 +111,7 @@ if __name__ == '__main__':
     robot_type: sim_util.RobotInfo = sim_util.RobotInfo.QUAD
     planner_type: sim_util.PlannerInfo = sim_util.PlannerInfo.HORIZONTAL
     controller_type: sim_util.ControllerInfo = sim_util.ControllerInfo.PVFC
-    run_sim(robot_type, planner_type, controller_type, sim_time=60, plot=True, return_data=False)
-    # controller_types = [sim_util.ControllerInfo.PVFC, sim_util.ControllerInfo.AUGMENTEDPD]#sim_util.ControllerInfo.AUGMENTEDPD]  # define which controllers to compare
-    # run_tracking_performance_comparo(robot_type, planner_type, controller_types, sim_time=5, dt=0.01, gen_data=True)  # runs comparo for all controllers
+    # run_sim(robot_type, planner_type, controller_type, sim_time=60, plot=True, return_data=False)
+    controller_types = [sim_util.ControllerInfo.PVFC, sim_util.ControllerInfo.AUGMENTEDPD]#sim_util.ControllerInfo.AUGMENTEDPD]  # define which controllers to compare
+    run_tracking_performance_comparo(robot_type, planner_type, controller_types, sim_time=5, dt=0.01, gen_data=True)  # runs comparo for all controllers
     # run_velocity_field_viz(planner_type, robot_type)  # to visualize the velocity field
