@@ -1,7 +1,7 @@
 import numpy as np
 import sim_utilities as sim_util
-import pvfc_core.utilities as util
-from pvfc_core.Planner import UpRampVelocityField
+import algorithm_core.utilities as util
+from algorithm_core.Planner import UpRampVelocityField
 
 class Sim:
     def __init__(self, planner, controller, robot, ramp_force_params=None):

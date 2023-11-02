@@ -1,7 +1,7 @@
 from Simulation import Sim
 from Plotter import PlotSimResults, PlotPassiveSimResults, VizVelocityField, ControlComparison, plt 
 import sim_utilities as sim_util
-import pvfc_core.params as params
+import algorithm_core.params as params
 import numpy as np
 import pickle
 

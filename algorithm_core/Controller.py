@@ -1,7 +1,7 @@
 import numpy as np
-import pvfc_core.utilities as util
-from pvfc_core.Dynamics import QuadrotorTranslationalDynamics, AerialManipulatorTaskDynamics
-from pvfc_core.params import quadrotor_params, AM_params
+import algorithm_core.utilities as util
+from algorithm_core.Dynamics import QuadrotorTranslationalDynamics, AerialManipulatorTaskDynamics
+from algorithm_core.params import quadrotor_params, AM_params
 
 class BaseControl:
     def __init__(self, robot_params, attitude_control_params):

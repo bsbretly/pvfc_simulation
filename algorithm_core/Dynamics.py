@@ -1,5 +1,5 @@
 import numpy as np
-import pvfc_core.utilities as util
+import algorithm_core.utilities as util
 
 class QuadrotorDynamics:
     def __init__(self, robot_parameters, g=9.81):
