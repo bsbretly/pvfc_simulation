@@ -1,6 +1,11 @@
 import matplotlib.lines as mlines
 import numpy as np
-import formatPlots as fp
+import sys
+import os
+current_directory = os.path.dirname(os.path.abspath(__file__))
+parent_directory = os.path.dirname(current_directory)
+sys.path.insert(0, parent_directory)
+from format import formatPlots
 import matplotlib.pyplot as plt
 import sim_utilities as util
 plt.rcParams['text.usetex'] = True
@@ -9,7 +14,7 @@ plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
 class PlotSimResults:
     def __init__(self, planner, controller, robot):
         self.planner, self.controller, self.robot = planner, controller, robot
-        fp.setupPlotParams()
+        formatPlots.setupPlotParams()
 
     def plotVelocityField(self, fig, ax, qs):
         minimum = np.amin(np.concatenate((qs[0,:], qs[1,:])))
@@ -254,7 +259,7 @@ class PlotPassiveSimResults(PlotSimResults):
 class ControlComparison(PlotPassiveSimResults):
     def __init__(self, controllers, data):
         self.controllers, self.data = controllers, data  # list of controller objects to compare
-        fp.setupPlotParams()
+        formatPlots.setupPlotParams()
     
     def plot_beta(self, fig, axs, ts, qs, q_dots, q_T_dots, q_r_dots):
         if np.all(q_dots==q_T_dots): qs, q_dots, q_T_dots = qs[:-1,:], q_dots[:-1,:], q_T_dots[:-1,:]  # quadrotor controlled in x,z space
@@ -361,7 +366,7 @@ class ControlComparison(PlotPassiveSimResults):
 class VizVelocityField(PlotSimResults):
     def __init__(self, planner):
         self.planner = planner
-        fp.setupPlotParams()
+        formatPlots.setupPlotParams()
 
     def plotVelocityField(self, fig, ax, x_T, z_T):
         x_max = np.amax(x_T)
