@@ -31,7 +31,7 @@ class VelocityPlanner:
             desired augmented velocity field and desired augmented velocity field gradient - Vbar, Vbar_dot 
         '''   
         if self.task_space:     
-            q, q_dot = util.configToTask(q, q_dot, self.tool_length)
+            q, q_dot = util.config_to_task(q, q_dot, self.tool_length)
         return self.computeVelocityField(q), self.computeVelocityFieldGradient(q, q_dot)
     
     def plotStep(self, q_T):

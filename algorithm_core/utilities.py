@@ -1,6 +1,6 @@
 import numpy as np
 
-def computeTransforms(q, q_dot, tool_length):
+def compute_transforms(q, q_dot, tool_length):
     '''
     input: 
         configuration state and AM tool length - q, q_dot, tool_length
@@ -17,19 +17,19 @@ def computeTransforms(q, q_dot, tool_length):
         [0, 0, 0, tool_length*np.sin(q[3,0])*q_dot[3,0]]])
     return K, J, J_dot
 
-def configToTask(q, q_dot, tool_length, q_ddot=None):
+def config_to_task(q, q_dot, tool_length, q_ddot=None):
     '''
     input: 
         state and AM tool length - q, q_dot, tool_length
     output: 
         tool-tip position and velocity - q_T, q_T_dot
     '''
-    K, J, J_dot = computeTransforms(q, q_dot, tool_length)
+    K, J, J_dot = compute_transforms(q, q_dot, tool_length)
     if isinstance(q_ddot, type(None)): return K + q[:2], J@q_dot
     # Acceleration: J_dot@q_dot + J@q_ddot
     return K + q[:2], J@q_dot 
     
-def decomposeThrustVector(Lambda):
+def decompose_thrust_vector(Lambda):
     '''
     input: 
         thrust vector - Lambda

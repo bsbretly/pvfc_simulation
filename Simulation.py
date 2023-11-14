@@ -15,8 +15,8 @@ class Sim:
         ts = np.arange(0, sim_time, dt)
         for t in ts:
             if self.planner.__class__.__name__ == UpRampVelocityField.__name__:
-                q_T, q_dot_T = util.configToTask(q, q_dot, self.robot.dynamics.tool_length)
-                f_e = sim_util.computeRampForce(self.ramp_k, self.ramp_mu, self.planner.p1, self.planner.p2, q_T, q_dot_T)
+                q_T, q_dot_T = util.config_to_task(q, q_dot, self.robot.dynamics.tool_length)
+                f_e = sim_util.compute_ramp_force(self.ramp_k, self.ramp_mu, self.planner.p1, self.planner.p2, q_T, q_dot_T)
             else: f_e = np.zeros((2,1))
             qs.append(q.copy()), q_dots.append(q_dot.copy()), q_r_dots.append(q_r_dot.copy())  # save states before update
             V, V_dot = self.planner.step(q, q_dot)

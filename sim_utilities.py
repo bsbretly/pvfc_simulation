@@ -62,7 +62,7 @@ def create_controller(controller: ControllerInfo, robot_params: namedtuple) -> B
     return controller_class(robot_params, params.attitude_control_params(), *args)
 
 def get_task_space_state_vectorized(q, q_dot, tool_length):
-    q_T, q_T_dot = zip(*[util.configToTask(q_i, q_dot_i, tool_length) for q_i, q_dot_i in zip(q.T[:,:,None], q_dot.T[:,:,None])])
+    q_T, q_T_dot = zip(*[util.config_to_task(q_i, q_dot_i, tool_length) for q_i, q_dot_i in zip(q.T[:,:,None], q_dot.T[:,:,None])])
     return np.concatenate(q_T,axis=1), np.concatenate(q_T_dot,axis=1)
 
 def create_fig(rows,cols,figsize=(16,9),sharex=True):
@@ -104,7 +104,7 @@ def contactRamp(p1, p2, q_T):
     z_ramp = m*x_T + b
     return z_T <= z_ramp
 
-def computeRampForce(k, mu, p1, p2, q_T, q_dot_T): 
+def compute_ramp_force(k, mu, p1, p2, q_T, q_dot_T): 
     '''
     input: 
         ramp stiffness, coefficient of kinetic friction, points and end-effector posiion - k, mu, p1, p2, q_T
