@@ -249,7 +249,7 @@ class PlotPassiveSimResults(PlotSimResults):
     def compute_kinetic_energy_vectorized(self, qs, q_dots, q_T_dots, q_r_dots):
         cols = qs.shape[1]
         q_bar_dots = np.vstack((q_T_dots, q_r_dots))
-        M_bar = [self.controller.computeDynamics(qs[:, i:i+1], q_dots[:, i:i+1])[0] for i in range(cols)]
+        M_bar = [self.controller.compute_dynamics(qs[:, i:i+1], q_dots[:, i:i+1])[0] for i in range(cols)]
         K = [0.5 * q_T_dots[:, i:i+1].T @ M_i[:-1,:-1] @ q_T_dots[:, i:i+1] for i, M_i in enumerate(M_bar)]
         K_r = [0.5*M_i[-1,-1]*q_r_dots[i]**2 for i, M_i in enumerate(M_bar)]
         K_bar = [0.5 * q_bar_dots[:, i:i+1].T @ M_i @ q_bar_dots[:, i:i+1] for i, M_i in enumerate(M_bar)]

@@ -10,7 +10,7 @@ class Robot:
         else: raise NotImplementedError("Robot parameters not implemented for the robot.")
 
     def step(self, q, q_dot, u, F_e, dt):
-        M, C, G, B = self.dynamics.computeDynamics(q, q_dot)
+        M, C, G, B = self.dynamics.compute_dynamics(q, q_dot)
 
         q_ddot = np.linalg.inv(M)@(B@u + F_e - G - C@q_dot)
         q_dot += q_ddot*dt 

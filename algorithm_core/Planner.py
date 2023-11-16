@@ -16,12 +16,27 @@ class VelocityPlanner:
             self.task_space = True
             self.m, self.m_r, self.tool_length, self.E_bar = base_robot_planner_params
         else: raise NotImplementedError("Planner parameters not implemented.")
-        
         self.q_sym = sp.Matrix([sp.symbols('x'), sp.symbols('z')])
-        self.setParams(base_planner_params, planner_params)
+        self.init_velocity_field(base_planner_params,planner_params)
+
+    def update_velocity_field(self, m_r, E_bar, base_planner_params, planner_params):
+        self.m_r, self.E_bar = m_r, E_bar
+        # print("m_r = ", self.m_r, "E_bar = ", self.E_bar)
+        self.init_velocity_field(base_planner_params, planner_params)
+
+    def init_velocity_field(self, base_planner_params, planner_params):
+        self.set_parameters(base_planner_params, planner_params)
         self.computeSymbolicV()
         if not self.visualize: self.augmentV()
         self.lambdifyV()
+
+    def update_m_r(self, m_r):
+        # TODO: update the reservoir mass
+        pass
+    
+    def update_E_bar(self, E_bar):
+        # TODO: update the reservoir energy
+        pass
 
     def step(self, q, q_dot):
         '''
@@ -29,7 +44,7 @@ class VelocityPlanner:
             robot position, robot velocity, reservoir velocity - q, q_dot
         output:
             desired augmented velocity field and desired augmented velocity field gradient - Vbar, Vbar_dot 
-        '''   
+        '''  
         if self.task_space:     
             q, q_dot = util.config_to_task(q, q_dot, self.tool_length)
         return self.computeVelocityField(q), self.computeVelocityFieldGradient(q, q_dot)
@@ -42,9 +57,9 @@ class VelocityPlanner:
             Vbar = self.velocity_field(float(q_T[0]), float(q_T[1]))
         except Exception as e:
             print(e)
-            return np.zeros((3,1))
+            return -1*np.ones((3,1))
         if np.isnan(Vbar).any():
-            return np.zeros((3,1))
+            return -1*np.ones((3,1))
         return Vbar.reshape(-1, 1)
 
     def computeVelocityFieldGradient(self, q_T, q_T_dot):
@@ -57,9 +72,9 @@ class VelocityPlanner:
             Vbar_dot = dV_bar_dqbar@q_temp
         except Exception as e:
             print(e)
-            return np.zeros((3,1))
+            return -1*np.ones((3,1))
         if np.isnan(Vbar_dot).any():
-            return np.zeros((3,1))
+            return -1*np.ones((3,1))
         
         return Vbar_dot.reshape(-1, 1)
 
@@ -82,9 +97,9 @@ class VelocityPlanner:
         ''' this method has to initialize self.V_sym'''
         raise NotImplementedError("Must override computeSymbolicV")
 
-    def setParams(self, base_planner_params, planner_params):
+    def set_parameters(self, base_planner_params, planner_params):
         ''' this method has to initialize the parameters of the subclass'''
-        raise NotImplementedError("Must override setParams")
+        raise NotImplementedError("Must override set_parameters")
     
 
 class ContourVelocityField(VelocityPlanner):
@@ -92,17 +107,19 @@ class ContourVelocityField(VelocityPlanner):
     def __init__(self, base_robot_planner_params, base_planner_params, planner_params, visualize=False):
         super().__init__(base_robot_planner_params, base_planner_params, planner_params, visualize=visualize)
     
-    def setParams(self, base_contour_planner_params):
+    def set_parameters(self, base_contour_planner_params):
         self.normal_gain, self.tangent_gain = base_contour_planner_params
+        # print("normal_gain = ", self.normal_gain, "tangent_gain = ", self.tangent_gain)
     
 
 class PointVelocityField(ContourVelocityField):
     def __init__(self, base_robot_planner_params, base_point_planner_params, point_planner_params, visualize=False):
         super().__init__(base_robot_planner_params, base_point_planner_params, point_planner_params, visualize=visualize)
 
-    def setParams(self, base_planner_params, planner_params):
-        super().setParams(base_planner_params)
+    def set_parameters(self, base_planner_params, planner_params):
+        super().set_parameters(base_planner_params)
         self.x_d, self.z_d = planner_params
+        # print("x_d = ", self.x_d, "z_d = ", self.z_d)
         
     def computeSymbolicV(self): 
         Q_sym = sp.Matrix([self.x_d, self.z_d])
@@ -115,8 +132,8 @@ class HorinzontalLineVelocityField(ContourVelocityField):
     def __init__(self, base_robot_planner_params, base_planner_params, planner_params, visualize=False):
         super().__init__(base_robot_planner_params, base_planner_params, planner_params, visualize=visualize)
 
-    def setParams(self, base_planner_params, planner_params):
-        super().setParams(base_planner_params)
+    def set_parameters(self, base_planner_params, planner_params):
+        super().set_parameters(base_planner_params)
         self.z_intercept, self.delta = planner_params
         
     def computeSymbolicV(self): 
@@ -130,8 +147,8 @@ class UpRampVelocityField(ContourVelocityField):
     def __init__(self, base_robot_planner_params, base_planner_params, planner_params, visualize=False):
         super().__init__(base_robot_planner_params, base_planner_params, planner_params, visualize=visualize)
         
-    def setParams(self, base_planner_params, planner_params):
-        super().setParams(base_planner_params)
+    def set_parameters(self, base_planner_params, planner_params):
+        super().set_parameters(base_planner_params)
         self.delta, self.p1, self.p2 = planner_params
         self.m, self.b = util.computeRampParams(self.p1, self.p2)
 
@@ -147,7 +164,7 @@ class SuperQuadraticField(VelocityPlanner):
     def __init__(self, base_robot_planner_params, super_quadratic_params, visualize=False):
         super().__init__(base_robot_planner_params, super_quadratic_params, visualize=visualize)
 
-    def setParams(self, superQuadraticParams): 
+    def set_parameters(self, superQuadraticParams): 
         self.obs_x, self.obs_z, self.obs_m, self.obs_n, self.obs_L, self.obs_len = superQuadraticParams
 
     def computeSymbolicV(self):

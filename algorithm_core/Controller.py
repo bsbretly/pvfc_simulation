@@ -83,13 +83,15 @@ class PassiveBaseControl(BaseControl):
     
     def update_gamma(self, gamma):
         self.gamma = gamma
-    
+        # print("gamma = ", self.gamma)
+
     def update_E_bar(self, E_bar):
         self.E_bar = E_bar
-    
+        # print("E_bar = ", self.E_bar)
+
     def update_m_r(self, m_r):
         self.m_r = m_r
-
+        # print("m_r = ", self.m_r)
 
 class PDControl(BaseControl):
     def __init__(self, robot_params, attitude_control_params, *args):
