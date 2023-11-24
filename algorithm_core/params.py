@@ -55,7 +55,7 @@ up_ramp_planner_params = namedtuple('up_ramp_planner_params', ['delta', 'p1', 'p
 super_quadratic_params = namedtuple('super_quadratic_params', ['obs_x', 'obs_z', 'obs_m', 'obs_n', 'obs_L', 'obs_len'], defaults=(obs_x, obs_z, obs_m, obs_n, obs_L, obs_len))
 
 # AM initial conditions
-AM_q = np.array([[0., .0, 0.*DEG_TO_RAD, 90.*DEG_TO_RAD]]).T  # q = [x, z, theta, Beta]^T
+AM_q = np.array([[0., .0, 0.*DEG_TO_RAD, 90.*DEG_TO_RAD]]).T  # q = [x, z, theta, beta]^T
 AM_q_dot = np.array([[0. , 0.01, 0., 0.]]).T 
 AM_q_ddot = np.array([[0. , 0., 0., 0.]]).T
 
