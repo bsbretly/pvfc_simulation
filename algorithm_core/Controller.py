@@ -79,7 +79,7 @@ class PassiveBaseControl(BaseControl):
     
     def compute_dynamics(self, q, q_dot):
         M, C = super().compute_dynamics(q, q_dot)
-        return util.augmentDynamics(M, C, self.m_r)
+        return util.augment_dynamics(M, C, self.m_r)
     
     def update_gamma(self, gamma):
         self.gamma = gamma

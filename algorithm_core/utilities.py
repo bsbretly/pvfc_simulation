@@ -41,7 +41,7 @@ def decompose_thrust_vector(Lambda):
     theta_d = np.arctan2(Lambda_hat[0], Lambda_hat[1])[0]
     return thrust, theta_d
 
-def augmentDynamics(M, C, m_r):
+def augment_dynamics(M, C, m_r):
     M_bar = np.pad(M, ((0,1),(0,1)), 'constant')
     M_bar[-1,-1] = m_r
     C_bar = np.pad(C, ((0,1),(0,1)), 'constant')

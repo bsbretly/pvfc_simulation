@@ -32,7 +32,7 @@ class AerialManipulator(Robot):
         super().__init__(robot_params)
 
     def step(self, q, q_dot, u, F_e, dt):
-        _, J, _ = util.computeTransforms(q, q_dot, self.dynamics.tool_length)
+        _, J, _ = util.compute_transforms(q, q_dot, self.dynamics.tool_length)
         F_e = J.T@F_e
         return super().step(q, q_dot, u, F_e, dt)
     

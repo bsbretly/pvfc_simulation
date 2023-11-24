@@ -127,7 +127,7 @@ class PlotPassiveSimResults(PlotSimResults):
         if self.controller.__class__.__name__==util.ControllerInfo.PVFC.value: 
             beta_error = q_bar_dots - beta*Vs
             ax[0].plot(ts, beta_error[0], label=r'$e_{\beta,x}$')
-            # ax[1].plot(ts, beta_error[1], label=r'$e_{\beta,y}$')
+            ax[1].plot(ts, beta_error[1], label=r'$e_{\beta,z}$')
         else: 
             # ax[0].plot(ts, error[0], label=r'$e_x$')
             ax[1].plot(ts, error[0], label=r'$e_x$')
