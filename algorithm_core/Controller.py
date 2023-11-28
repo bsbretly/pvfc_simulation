@@ -20,8 +20,13 @@ class BaseControl:
     def compute_attitude_command_and_control(self, q, q_dot, F, task_space=False):
         thrust, theta_d = self.decompose_thrust(F)  # Decompse thrust vector into thrust scalar and theta_d
         tau_theta_d = self.dynamics.I*(self.theta_K_p*(theta_d - q[2,0]) + self.theta_K_d*(0. - q_dot[2,0]))
-        if task_space: return np.array([[thrust, tau_theta_d + F[-1,0], F[-1,0]]]).T, [thrust, theta_d]
-        else: return np.array([[thrust, tau_theta_d]]).T, [thrust, theta_d]
+        u_attitude = [thrust, theta_d]
+        if task_space: 
+            u = np.array([[thrust, tau_theta_d + F[-1,0], F[-1,0]]]).T
+        else: 
+            u = np.array([[thrust, tau_theta_d]]).T
+        
+        return u, u_attitude
     
     def compute_config_force_control(self, q, q_dot, F_T):
         # Force-based control
@@ -54,11 +59,15 @@ class BaseControl:
             F_T, f_r, q_r, q_r_dot = self.compute_control_action(q_T_dot, q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt)
             F = self.compute_config_force_control(q, q_dot, F_T)
             u, u_attitude = self.compute_attitude_command_and_control(q, q_dot, F, task_space=True)
+
             return u, u_attitude, F_T, f_r, q_r, q_r_dot
+        
         elif self.dynamics.__class__.__name__==QuadrotorTranslationalDynamics.__name__:  # Quad in configuration space
             F, f_r, q_r, q_r_dot = self.compute_control_action(q_dot[:-1,:], q_r, q_r_dot, V_bar, V_bar_dot, M, C, dt)
             u, u_attitude = self.compute_attitude_command_and_control(q, q_dot, F, task_space=False)
+
             return u, u_attitude, F, f_r, q_r, q_r_dot
+        
         else:    
             raise NotImplementedError("Dynamics not defined for the controller.")
         
