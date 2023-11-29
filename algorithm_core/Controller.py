@@ -84,6 +84,7 @@ class PassiveBaseControl(BaseControl):
         q_r_ddot = tau_r / self.m_r
         q_r_dot += q_r_ddot*dt
         q_r += q_r_dot*dt
+        
         return q_r, q_r_dot
     
     def compute_dynamics(self, q, q_dot):
@@ -114,6 +115,7 @@ class PDControl(BaseControl):
         '''       
         tau = M@V_bar_dot[:2] + C@V_bar[:2] + self.K_p*(V_bar[:2] - q_dot)
         tau_r = np.array(0.)  # no reservoir control
+
         return tau, tau_r, q_r, q_r_dot
 
 
@@ -126,6 +128,7 @@ class AugmentedPDControl(PassiveBaseControl):
         qbar_dot = np.vstack([q_dot, q_r_dot])
         tau_bar = M_bar@V_bar_dot + C_bar@V_bar + self.K_p*(V_bar - qbar_dot)
         q_r, q_r_dot = self.update_reservoir_state(tau_bar[-1,-1], q_r, q_r_dot, dt)
+
         return tau_bar[:2,:], tau_bar[-1,-1], q_r, q_r_dot
  
 
@@ -146,5 +149,6 @@ class PVFC(PassiveBaseControl):
         tau_f = self.gamma*(P_bar@p_bar.T - p_bar@P_bar.T)@(qbar_dot)
         tau_bar = tau_c + tau_f
         q_r, q_r_dot = self.update_reservoir_state(tau_bar[-1,-1], q_r, q_r_dot, dt)
+
         return tau_bar[:2,:], tau_bar[-1,-1], q_r, q_r_dot
     
