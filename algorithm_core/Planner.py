@@ -49,8 +49,6 @@ class VelocityPlanner:
             q, q_dot = util.config_to_task(q, q_dot, self.tool_length)
 
         V, V_dot = self.computeVelocityField(q), self.computeVelocityFieldGradient(q, q_dot)
-        if V.shape != (3,1) or V_dot.shape != (3,1):
-            raise ValueError("Debug Error.")
         
         return self.computeVelocityField(q), self.computeVelocityFieldGradient(q, q_dot)
     
@@ -60,8 +58,6 @@ class VelocityPlanner:
     def computeVelocityField(self, q_T):
         try:
             Vbar = self.velocity_field(float(q_T[0]), float(q_T[1]))
-            if Vbar.shape != (3,1):
-                raise ValueError("Debug Error.")
         except Exception as e:
             print(e)
             return -1*np.ones((3,1))
