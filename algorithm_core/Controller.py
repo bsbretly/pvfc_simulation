@@ -140,7 +140,11 @@ class PVFC(PassiveBaseControl):
         ''' 
         input: robot state, reservoir state, desired velocity field, dynamics, time step
         output: control action to the robot, reservoir and updated reservoir state, - tau, tau_r, q_r, q_r_dot
-        '''        
+        '''      
+        
+        if M_bar.shape != (3,3) or C_bar.shape != (3,3) or V_bar.shape != (3,1) or V_bar_dot.shape != (3,1):
+            raise ValueError("Error.")  
+        
         qbar_dot = np.vstack([q_dot, q_r_dot])
         w_bar = M_bar@(V_bar_dot) + C_bar@(V_bar)
         p_bar = M_bar@(qbar_dot)
