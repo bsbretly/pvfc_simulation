@@ -1,4 +1,5 @@
 import numpy as np
+from enum import Enum
 from collections import namedtuple
 
 DEG_TO_RAD = np.pi/180
@@ -65,3 +66,7 @@ quad_q_dot = np.array([[0.0, -0.05, 0.]]).T
 quad_q_ddot = np.array([[0. , 0., 0.]]).T
 q_r, q_r_dot, q_r_ddot = np.array(0.), np.array(0.), np.array(0.)
 
+
+class RobotType(Enum):
+    AerialManipulator = AM_params
+    Quadrotor = quadrotor_params
