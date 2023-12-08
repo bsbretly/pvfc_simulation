@@ -4,9 +4,22 @@ from collections import namedtuple
 
 DEG_TO_RAD = np.pi/180
 
-# Robot parameters
-m, I = 1.5, 4.856e-3 
-m_t, I_t, tool_length = .1, 1., 0.15
+# # quad parameters
+# m = 1.5
+# I = 4.856e-3 
+# # aerial manipulator parameters
+# m_t = 0.1
+# I_t = 1.
+# tool_length = 0.15
+
+# quad parameters
+m = 1.35
+I = 0.0035
+# aerial manipulator parameters
+m_t = .034
+I_t = 0.0026112
+tool_length = 0.48
+
 quadrotor_params = namedtuple('quadrotor_params', ['m', 'I'], defaults = (m, I))
 AM_params = namedtuple('AM_params', ['m', 'm_t', 'I', 'I_t', 'tool_length'], defaults = (m, m_t, I, I_t, tool_length))
 
