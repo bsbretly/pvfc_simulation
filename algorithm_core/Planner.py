@@ -20,8 +20,8 @@ class VelocityPlanner:
         self.init_velocity_field(base_planner_params,planner_params)
 
     def update_velocity_field(self, m_r, E_bar, base_planner_params, planner_params):
-        self.m_r, self.E_bar = m_r, E_bar
-        # print("m_r = ", self.m_r, "E_bar = ", self.E_bar)
+        self.m_r = m_r
+        self.E_bar = E_bar
         self.init_velocity_field(base_planner_params, planner_params)
 
     def init_velocity_field(self, base_planner_params, planner_params):
@@ -29,14 +29,6 @@ class VelocityPlanner:
         self.computeSymbolicV()
         if not self.visualize: self.augmentV()
         self.lambdifyV()
-
-    def update_m_r(self, m_r):
-        # TODO: update the reservoir mass
-        pass
-    
-    def update_E_bar(self, E_bar):
-        # TODO: update the reservoir energy
-        pass
 
     def step(self, q, q_dot):
         '''
@@ -112,7 +104,6 @@ class ContourVelocityField(VelocityPlanner):
     
     def set_parameters(self, base_contour_planner_params):
         self.normal_gain, self.tangent_gain = base_contour_planner_params
-        # print("normal_gain = ", self.normal_gain, "tangent_gain = ", self.tangent_gain)
     
 
 class PointVelocityField(ContourVelocityField):
@@ -122,7 +113,6 @@ class PointVelocityField(ContourVelocityField):
     def set_parameters(self, base_planner_params, planner_params):
         super().set_parameters(base_planner_params)
         self.x_d, self.z_d = planner_params
-        # print("x_d = ", self.x_d, "z_d = ", self.z_d)
         
     def computeSymbolicV(self): 
         Q_sym = sp.Matrix([self.x_d, self.z_d])

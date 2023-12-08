@@ -108,7 +108,7 @@ def run_velocity_field_viz(planner_type, robot_type):
 
 
 if __name__ == '__main__':
-    robot_type: sim_util.RobotInfo = sim_util.RobotInfo.AM
+    robot_type: sim_util.RobotInfo = sim_util.RobotInfo.QUAD
     planner_type: sim_util.PlannerInfo = sim_util.PlannerInfo.POINT
     controller_type: sim_util.ControllerInfo = sim_util.ControllerInfo.PVFC
     run_sim(robot_type, planner_type, controller_type, sim_time=90, plot=True, return_data=False)

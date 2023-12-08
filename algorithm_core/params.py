@@ -44,7 +44,7 @@ obs_x, obs_z = 1., 0. # obstacle position
 obs_m, obs_n, obs_L, obs_len = 5., 2., 1., 5. # obstacle parameters
 
 base_quad_planner_params = namedtuple('base_quad_planner_params', ['m', 'm_r', 'E_bar'], defaults=(m, m_r, E_bar))
-base_AM_planner_params = namedtuple('base_AM_planner_params', ['m', 'm_r', 'tool_length', 'E_bar'], defaults=(m, m_r, tool_length, E_bar))
+base_AM_planner_params = namedtuple('base_AM_planner_params', ['m_t', 'm_r', 'tool_length', 'E_bar'], defaults=(m_t, m_r, tool_length, E_bar))
 
 base_point_planner_params = namedtuple('base_point_planner_params', ['point_normal_gain', 'point_tangent_gain'], defaults=(point_normal_gain, point_tangent_gain))
 base_horizontal_line_planner_params = namedtuple('base_horizontal_line_planner_params', ['horizontal_normal_gain', 'horizontal_tangent_gain'], defaults=(horizontal_normal_gain, horizontal_tangent_gain))
