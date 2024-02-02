@@ -7,7 +7,8 @@ parent_directory = os.path.dirname(current_directory)
 sys.path.insert(0, parent_directory)
 from format import formatPlots
 import matplotlib.pyplot as plt
-import sim_utilities as util
+import sim_utilities as sim_util 
+from ramp import Ramp
 plt.rcParams['text.usetex'] = True
 plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
 
@@ -48,7 +49,7 @@ class PlotSimResults:
         ax[0].plot(qs[0,:], qs[1,:], color=color, linestyle=linestyle)
 
     def display(self, fig, ax, q, q_T, max_x, max_z):
-        if self.robot.__class__.__name__ == util.RobotInfo.AM.value.robot_type: 
+        if self.robot.__class__.__name__ == sim_util.RobotInfo.AM.value.robot_type: 
             x, z, theta, Beta = q[0], q[1], q[2], q[3]
             ax[0].plot([x, q_T[0]], [z, q_T[1]], 'green')  # plot tool
             ax[0].plot(q_T[0], q_T[1], 'go', label='tool tip')  # plot end-effector
@@ -65,9 +66,9 @@ class PlotSimResults:
         return fig, ax
 
     def plotRamp(self, fig, ax, q_Ts, color='black', linestyle='-'):
-        m,b = util.computeRampParams(self.planner.p1, self.planner.p2)
+        self.ramp = Ramp(p1=self.planner.p1, p2=self.planner.p2)
         x = np.linspace(0, q_Ts[0,-1], 100)
-        ax[0].plot(x, m*x + b, color=color, linestyle=linestyle, linewidth=2)
+        ax[0].plot(x, self.ramp.m*x + self.ramp.b, color=color, linestyle=linestyle, linewidth=2)
         return fig, ax
 
     def plotPositionTracking(self, fig, ax, x_d, z_d):
@@ -104,7 +105,7 @@ class PlotSimResults:
         for i in idxs:
             self.display(fig, ax, qs[:,i:i+1], q_Ts[:,i:i+1], max_x, max_z)  # display takes configuration state
         quad = mlines.Line2D([], [], color='blue', marker='o', linestyle='-', markersize=5, label='quadrotor')
-        if self.robot.__class__.__name__==util.RobotInfo.AM.value.robot_type:
+        if self.robot.__class__.__name__==sim_util.RobotInfo.AM.value.robot_type:
             tool = mlines.Line2D([], [], color='green', marker='o', linestyle='None', markersize=5, label='tool tip')
             ax[0].legend(handles=[quad, tool])
         else: ax[0].legend(handles=[quad])
@@ -124,7 +125,7 @@ class PlotPassiveSimResults(PlotSimResults):
         q_bar_dots = np.vstack((q_T_dots, q_r_dots))
         beta_error = q_bar_dots - beta*Vs
         error = q_bar_dots - Vs
-        if self.controller.__class__.__name__==util.ControllerInfo.PVFC.value: 
+        if self.controller.__class__.__name__==sim_util.ControllerInfo.PVFC.value: 
             beta_error = q_bar_dots - beta*Vs
             ax[0].plot(ts, beta_error[0], label=r'$e_{\beta,x}$')
             ax[1].plot(ts, beta_error[1], label=r'$e_{\beta,z}$')
@@ -273,12 +274,12 @@ class ControlComparison(PlotPassiveSimResults):
         # axis0 = ax[0]
         # axis1 = ax[1] 
         if np.all(q_dots==q_T_dots): qs, q_dots, q_T_dots = qs[:-1,:], q_dots[:-1,:], q_T_dots[:-1,:]  # quadrotor controlled in x,z space
-        if control_type in [util.ControllerInfo.PVFC]:
+        if control_type in [sim_util.ControllerInfo.PVFC]:
             K_bar = self.compute_kinetic_energy_vectorized(qs, q_dots, q_T_dots, q_r_dots)[-1]
             beta = np.sqrt(K_bar/self.controller.E_bar).squeeze()
             q_T_bar_dots = np.vstack((q_T_dots, q_r_dots))
             beta_error = q_T_bar_dots - beta*Vs
-            # if control_type==util.ControllerInfo.AUGMENTEDPD: 
+            # if control_type==sim_util.ControllerInfo.AUGMENTEDPD: 
             #     axis0 = ax[0].twinx()
             #     axis1 = ax[1].twinx()
             ax[0].plot(ts, beta_error[0], 'g', label=r'$\bar{e}_{\beta,'+dim[0]+',' + control_type.name + r'}$')
@@ -346,14 +347,14 @@ class ControlComparison(PlotPassiveSimResults):
 
     def plot_comparo(self, plot_error=True, plot_velocity_tracking=True, controller_types=None):
         if controller_types == None: raise NotImplementedError("Must specify controller types to plot.")
-        fig1, ax1 = util.create_fig(2, 1)
+        fig1, ax1 = sim_util.create_fig(2, 1)
         error_title = 'Error Comparison'
         for i, control_type in enumerate(controller_types):
             self.controller = self.controllers[i]  # controller object
             if plot_error:
                 fig1, ax1 = self.plot_error(fig1, ax1, control_type, self.data['ts'][control_type], self.data['qs'][control_type], self.data['q_dots'][control_type], self.data['q_T_dots'][control_type], self.data['q_r_dots'][control_type], self.data['Vs'][control_type])
             if plot_velocity_tracking:
-                fig, axs = util.create_fig(2, 1)
+                fig, axs = sim_util.create_fig(2, 1)
                 fig, axs = self.plot_velocity(fig, axs, self.data['ts'][control_type], self.data['q_T_dots'][control_type], self.data['Vs'][control_type])
                 # if control_type != util.ControllerInfo.PD: fig, axs = self.plot_beta(fig, axs, self.data['ts'][control_type], self.data['qs'][control_type], self.data['q_dots'][control_type], self.data['q_T_dots'][control_type], self.data['q_r_dots'][control_type])
                 fig.suptitle(control_type.value, fontsize=30)

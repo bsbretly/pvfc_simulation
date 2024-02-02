@@ -1,15 +1,15 @@
 import numpy as np
-import sim_utilities as sim_util
+from ramp import Ramp
 import algorithm_core.utilities as util
 from algorithm_core.Planner import UpRampVelocityField
 
 class Sim:
-    def __init__(self, planner, controller, robot, ramp_force_params=None):
+    def __init__(self, planner, controller, robot, ramp_params=None):
         self.planner = planner
         self.controller = controller
         self.robot = robot
-        if ramp_force_params is not None: 
-            self.ramp_k, self.ramp_mu = ramp_force_params 
+        if ramp_params is not None: 
+            self.ramp = Ramp(**ramp_params._asdict()) 
         
     def run(self, q, q_dot, q_r, q_r_dot, sim_time=10, dt=0.01):
         us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs, V_dots = ([] for i in range(9))  # initialize lists to store simulation data
@@ -18,7 +18,7 @@ class Sim:
         for t in ts:
             if self.planner.__class__.__name__ == UpRampVelocityField.__name__:
                 q_T, q_dot_T = util.config_to_task(q, q_dot, self.robot.dynamics.tool_length)
-                f_e = sim_util.compute_ramp_force(self.ramp_k, self.ramp_mu, self.planner.p1, self.planner.p2, q_T, q_dot_T)
+                f_e = self.ramp.compute_ramp_force(q_T, q_dot_T)
             else: 
                 f_e = np.zeros((2,1))
 

@@ -1,6 +1,7 @@
 import numpy as np
 import sympy as sp
 import algorithm_core.utilities as util
+from ramp import Ramp
 from algorithm_core.params import base_quad_planner_params, base_AM_planner_params
 DEG_TO_RAD = np.pi/180
 RAD_TO_DEG = 1/DEG_TO_RAD
@@ -143,12 +144,12 @@ class UpRampVelocityField(ContourVelocityField):
     def set_parameters(self, base_planner_params, planner_params):
         super().set_parameters(base_planner_params)
         self.delta, self.p1, self.p2 = planner_params
-        self.m, self.b = util.computeRampParams(self.p1, self.p2)
+        self.ramp = Ramp(p1=self.p1, p2=self.p2)
 
     def computeSymbolicV(self):
-        Q_sym = sp.Matrix([self.q_sym[0], self.m*self.q_sym[0] + (self.b - self.delta)]) # Q is the point offset by delta "into" the surface
+        Q_sym = sp.Matrix([self.q_sym[0], self.ramp.m*self.q_sym[0] + (self.ramp.b - self.delta)]) # Q is the point offset by delta "into" the surface
         n_hat = (Q_sym - self.q_sym) / (Q_sym - self.q_sym).norm()
-        t_hat = sp.Matrix([1, self.m]) / (sp.Matrix([1, self.m])).norm()
+        t_hat = sp.Matrix([1, self.ramp.m]) / (sp.Matrix([1, self.ramp.m])).norm()
         self.symbolic_V = self.normal_gain*(self.tangent_gain*t_hat + (Q_sym - self.q_sym).norm()*n_hat)
 
 

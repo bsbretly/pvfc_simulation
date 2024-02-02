@@ -12,7 +12,7 @@ def run_sim(robot_type=sim_util.RobotInfo.AM, planner_type=sim_util.PlannerInfo.
     planner = sim_util.create_planner(planner_type, robot_type)
     controller = sim_util.create_controller(controller_type, robot_params)
 
-    sim = Sim(planner, controller, robot, params.ramp_force_params())
+    sim = Sim(planner, controller, robot, params.ramp_params())
     ts, u, F, F_r, f_e, q, q_dot, q_r_dot, V, V_dot = sim.run(q_0, q_dot_0, params.q_r.copy(), params.q_r_dot.copy(), sim_time=sim_time, dt=dt)  # run simulation
     us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs, V_dots =  np.concatenate(u,axis=1), np.concatenate(F,axis=1), (F_r), np.concatenate(f_e,axis=1), np.concatenate(q,axis=1), np.concatenate(q_dot,axis=1), (q_r_dot), np.concatenate(V,axis=1), np.concatenate(V_dot,axis=1)
     if plot: plot_results(planner, controller, robot, ts, us, Fs, F_rs, f_es, qs, q_dots, q_r_dots, Vs)
@@ -109,9 +109,9 @@ def run_velocity_field_viz(planner_type, robot_type):
 
 if __name__ == '__main__':
     robot_type: sim_util.RobotInfo = sim_util.RobotInfo.AM
-    planner_type: sim_util.PlannerInfo = sim_util.PlannerInfo.POINT
+    planner_type: sim_util.PlannerInfo = sim_util.PlannerInfo.RAMP
     controller_type: sim_util.ControllerInfo = sim_util.ControllerInfo.PVFC
-    run_sim(robot_type, planner_type, controller_type, sim_time=90, plot=True, return_data=False)
+    run_sim(robot_type, planner_type, controller_type, sim_time=60, plot=True, return_data=False)
     # controller_types = [sim_util.ControllerInfo.PVFC, sim_util.ControllerInfo.AUGMENTEDPD]#sim_util.ControllerInfo.AUGMENTEDPD]  # define which controllers to compare
     # run_tracking_performance_comparo(robot_type, planner_type, controller_types, sim_time=5, dt=0.01, gen_data=True)  # runs comparo for all controllers
     # run_velocity_field_viz(planner_type, robot_type)  # to visualize the velocity field
