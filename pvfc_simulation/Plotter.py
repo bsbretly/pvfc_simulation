@@ -9,12 +9,14 @@ from format import formatPlots
 import matplotlib.pyplot as plt
 import sim_utilities as sim_util 
 from ramp import Ramp
+import numpy as np
 plt.rcParams['text.usetex'] = True
 plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
 
 class PlotSimResults:
     def __init__(self, planner, controller, robot):
         self.planner, self.controller, self.robot = planner, controller, robot
+        self.ramp = Ramp(p1=self.planner.p1, p2=self.planner.p2)
         formatPlots.setupPlotParams()
 
     def plotVelocityField(self, fig, ax, qs):
@@ -65,11 +67,31 @@ class PlotSimResults:
         ax[0].set_ylabel(r'$z\ [m]$')
         return fig, ax
 
-    def plotRamp(self, fig, ax, q_Ts, color='black', linestyle='-'):
-        self.ramp = Ramp(p1=self.planner.p1, p2=self.planner.p2)
-        x = np.linspace(0, q_Ts[0,-1], 100)
-        ax[0].plot(x, self.ramp.m*x + self.ramp.b, color=color, linestyle=linestyle, linewidth=2)
-        return fig, ax
+    def plot_ramp(self, fig, ax, q_Ts, color='black', linestyle='-', linewidth=2):
+
+            def plot_segment(x_range, y_values):
+                """Helper function to plot a segment of the ramp."""
+                ax[0].plot(x_range, y_values, color=color, linestyle=linestyle, linewidth=linewidth)
+
+            # ranges of x data
+            start_flat_x = np.linspace(0, self.ramp.p1[0], 10)
+            ramp_x = np.linspace(self.ramp.p1[0], self.ramp.p2[0], 10)
+            vertical_line_x = np.ones(len(start_flat_x))*self.ramp.p2[0]
+            end_flat_x = np.linspace(self.ramp.p2[0], q_Ts[0,-1], 10)
+            
+            # ranges of y data
+            ramp_y = self.ramp.m * ramp_x + self.ramp.b
+            horizontal_y = np.zeros_like(start_flat_x)
+            vertical_line_y = np.linspace(ramp_y[-1], 0, 10)
+
+            xs = [start_flat_x, ramp_x, vertical_line_x, end_flat_x]
+            ys = [horizontal_y, ramp_y, vertical_line_y, horizontal_y ]
+
+            # plot ranges
+            for i in range(len(xs)):
+                plot_segment(xs[i], ys[i])
+
+            return fig, ax
 
     def plotPositionTracking(self, fig, ax, x_d, z_d):
         ax[0].plot(self.ts, np.zeros_like(self.ts) + x_d, 'g--', label=r'$x_d$')

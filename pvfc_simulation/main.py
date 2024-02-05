@@ -77,7 +77,7 @@ def plot_sim_results(planner, controller, robot, ts, q_dots, Vs):
 def plot_sim_summary(plotter, robot_type, planner_type, ts, us, qs, q_Ts):
     fig, ax = sim_util.create_fig(1, 1)
     if planner_type==sim_util.PlannerInfo.RAMP.value:
-        plotter.plotRamp(fig, ax, q_Ts, color='black')
+        plotter.plot_ramp(fig, ax, q_Ts, color='black')
         plotter.plotTaskState(fig, ax, q_Ts, color='green')
     if robot_type==sim_util.RobotInfo.AM.value.robot_type: plotter.plotVelocityField(fig, ax, q_Ts)
     else: plotter.plotVelocityField(fig, ax, qs)
@@ -102,7 +102,7 @@ def run_velocity_field_viz(planner_type, robot_type):
     x_T = np.linspace(0, 4, 20) 
     z_T = np.linspace(0, 1, 20)
     q_T = np.array([x_T, z_T])
-    plotter.plotRamp(fig, ax, q_T, color='black')
+    plotter.plot_ramp(fig, ax, q_T, color='black')
     plotter.plotVelocityField(fig, ax, x_T, z_T)
     plt.show()
 
